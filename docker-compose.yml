@@ -1,0 +1,94 @@
+version: "3.1"
+
+services:
+  open-nedrex-redis:
+    image: redis
+    container_name: open_nedrex_live_redis
+#    ports:
+#      - "127.0.0.1:5379:6379"
+    restart: always
+    networks:
+      - nedrexdb_default
+
+  licensed-nedrex-redis:
+    image: redis
+    container_name: licensed_nedrex_live_redis
+#    ports:
+#      - "127.0.0.1:6379:6379"
+    restart: always
+    networks:
+      - nedrexdb_default
+
+  worker_open:
+    image: nedrexapi
+    build: .
+    container_name: nedrexapi_worker_open
+    volumes:
+#      - /var/run/docker.sock:/var/run/docker.sock
+      - ./config/open_config.toml:/app/nedrexapi/.open_config.toml
+    command:
+      - "bash"
+      - "./start_worker.sh"
+      - "-c"
+      - ".open_config.toml"
+      - "-h"
+      - "open-nedrex-redis"
+      - "-p"
+      - "6379"
+      - "-d"
+      - "3"
+    networks:
+      - nedrexdb_default
+    restart: always
+  runner_open:
+    image: nedrexapi
+    container_name: nedrexapi_open
+    ports:
+      - 7123:7123
+    volumes:
+#      - /var/run/docker.sock:/var/run/docker.sock
+      - ./config/open_config.toml:/app/nedrexapi/.open_config.toml
+    command:
+      - "bash"
+      - "./run_open.sh"
+    networks:
+      - nedrexdb_default
+  worker_licensed:
+    image: nedrexapi
+    build: .
+    container_name: nedrexapi_worker_licensed
+    volumes:
+#      - /var/run/docker.sock:/var/run/docker.sock
+      - ./config/licensed_config.toml:/app/nedrexapi/.licensed_config.toml
+    command:
+      - "bash"
+      - "./start_worker.sh"
+      - "-c"
+      - ".licensed_config.toml"
+      - "-h"
+      - "licensed-nedrex-redis"
+      - "-p"
+      - "6379"
+      - "-d"
+      - "3"
+    networks:
+      - nedrexdb_default
+    restart: always
+  runner_licensed:
+    image: nedrexapi
+    container_name: nedrexapi_licensed
+    ports:
+      - 6123:8123
+    volumes:
+#      - /var/run/docker.sock:/var/run/docker.sock
+      - ./config/licensed_config.toml:/app/nedrexapi/.licensed_config.toml
+    command:
+      - "bash"
+      - "./run_licensed.sh"
+    networks:
+      - nedrexdb_default
+networks:
+    nedrexdb_default:
+        external: true
+
+
