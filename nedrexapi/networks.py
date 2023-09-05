@@ -44,6 +44,8 @@ QUERY_MAP = {
 
 NETWORK_GEN_LOCK = Redlock(key="network_generation_lock", masters={_REDIS}, auto_release_time=int(1e10))
 
+BUFFER_SIZE = 10000  # You can adjust this value based on your testing
+
 
 def get_network(query, prefix, type):
     logger.info(f"obtaining {type} network for query:{_NEWLINE_TAB}{query.strip().replace(_NEWLINE, _NEWLINE_TAB)}")
@@ -64,14 +66,22 @@ def get_network(query, prefix, type):
 
 @redis_cache(redis=_REDIS, key="edge-list-generation-cache", timeout=int(1e10))
 def get_network_edge_list(query, prefix):
-
     outfile = f"/tmp/{_uuid4()}.tsv"
 
     with _NEO4J_DRIVER.session() as session, open(outfile, "w") as f:
+        buffer = []
         for result in session.run(query):
             a = result["x.primaryDomainId"].replace(prefix, "")
             b = result["y.primaryDomainId"].replace(prefix, "")
-            f.write("{}\t{}\n".format(a, b))
+            buffer.append(f"{a}\t{b}")
+
+            if len(buffer) >= BUFFER_SIZE:
+                f.write('\n'.join(buffer) + '\n')
+                buffer.clear()
+
+        # Write remaining lines in the buffer
+        if buffer:
+            f.write('\n'.join(buffer) + '\n')
 
     return outfile
 
@@ -82,28 +92,48 @@ def get_network_sif(query, prefix):
 
     edge_list = get_network_edge_list(query, prefix)
     with open(edge_list, "r") as f, open(outfile, "w") as g:
+        buffer = []
         for line in f:
             stripped_line = line.strip()
             if not stripped_line:
                 continue
             a, b = stripped_line.split()
-            g.write("{}\txx\t{}\n".format(a, b))
+            buffer.append(f"{a}\txx\t{b}")
+
+            if len(buffer) >= BUFFER_SIZE:
+                g.write('\n'.join(buffer) + '\n')
+                buffer.clear()
+
+        # Write remaining lines in the buffer
+        if buffer:
+            g.write('\n'.join(buffer) + '\n')
 
     return outfile
 
 
 def normalise_seeds_and_determine_type(seeds):
-    new_seeds = [seed.upper() for seed in seeds]
+    new_seeds = []
+    seed_type = "protein"
+    all_entrez = all_numeric = all_uniprot = True
 
-    if all(seed.startswith("ENTREZ.") for seed in new_seeds):
+    for seed in seeds:
+        upper_seed = seed.upper()
+        new_seeds.append(upper_seed)
+
+        if not upper_seed.startswith("ENTREZ."):
+            all_entrez = False
+        if not upper_seed.isnumeric():
+            all_numeric = False
+        if not upper_seed.startswith("UNIPROT."):
+            all_uniprot = False
+
+    if all_entrez:
         seed_type = "gene"
         new_seeds = [seed.replace("ENTREZ.", "") for seed in new_seeds]
-    elif all(seed.isnumeric() for seed in new_seeds):
+    elif all_numeric:
         seed_type = "gene"
-    elif all(seed.startswith("UNIPROT.") for seed in new_seeds):
-        seed_type = "protein"
+    elif all_uniprot:
         new_seeds = [seed.replace("UNIPROT.", "") for seed in new_seeds]
-    else:
-        seed_type = "protein"
 
     return new_seeds, seed_type
+
