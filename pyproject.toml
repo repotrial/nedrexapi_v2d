@@ -16,7 +16,7 @@ python-multipart = "^0.0.5"
 requests = "^2.26.0"
 filelock = "^3.3.2"
 redis = "^4.3.6"
-pottery = "^1.4.7"
+pottery = "^2.2.2"
 gseapy = "^0.10.7"
 gunicorn = "^20.1.0"
 slowapi = "^0.1.6"
@@ -27,7 +27,6 @@ rq = "^1.11.0"
 more-itertools = "^8.14.0"
 py2neo = "^2021.2.4"
 docker = "^6.0.0"
-
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
