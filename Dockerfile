@@ -28,7 +28,7 @@ RUN mamba install git
 WORKDIR /app/nedrexapi
 COPY . ./
 
-RUN git submodule update --init --recursive
+#RUN git submodule update --init --recursive
 
 RUN ls ./scripts
 
