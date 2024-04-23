@@ -30,8 +30,8 @@ RUN mamba install git
 WORKDIR /app/nedrexapi
 COPY . ./
 
-RUN git clone --recurse-submodules https://AndiMajore:${ACCESS_TOKEN}@github.com/repotrial/nedrexapi_v2d
-RUN #git submodule update --init --recursive
+#RUN git clone --recurse-submodules https://AndiMajore:${ACCESS_TOKEN}@github.com/repotrial/nedrexapi_v2d
+RUN git submodule update --init --recursive
 
 RUN ls ./scripts
 #WORKDIR ./scripts
