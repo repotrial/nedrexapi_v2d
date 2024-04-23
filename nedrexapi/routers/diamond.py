@@ -11,7 +11,8 @@ from nedrexapi.common import (
     _API_KEY_HEADER_ARG,
     _DIAMOND_COLL,
     _DIAMOND_COLL_LOCK,
-    _DIAMOND_DIR,
+    _DIAMOND_SUFFIX,
+    _DATA_DIR_INTERNAL,
     check_api_key_decorator,
 )
 from nedrexapi.networks import normalise_seeds_and_determine_type
@@ -141,4 +142,4 @@ def diamond_download(uid: str, x_api_key: str = _API_KEY_HEADER_ARG):
     if result["status"] == "failed":
         raise _HTTPException(status_code=404, detail=f"No results for DIAMOnD job with UID {uid!r} (failed)")
 
-    return _Response((_DIAMOND_DIR / (f"{uid}.txt")).open("rb").read(), media_type="text/plain")
+    return _Response((_DATA_DIR_INTERNAL / _DIAMOND_SUFFIX / (f"{uid}.txt")).open("rb").read(), media_type="text/plain")

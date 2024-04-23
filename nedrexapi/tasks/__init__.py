@@ -29,7 +29,7 @@ from nedrexapi.tasks.validation import (
 
 
 def get_queue_redis():
-    redis_instance = Redis.from_url(f"redis://localhost:{config['api.redis_port']}/{config['api.redis_queue_db']}")
+    redis_instance = Redis.from_url(f"redis://{config['api.redis_host']}:{config['api.redis_port_internal']}/{config['api.redis_queue_db']}")
     return redis_instance
 
 

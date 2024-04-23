@@ -59,8 +59,10 @@ edge_collections = [
 
 [api.directories]
 static = "/data/nedrex_files/nedrex_api/static"
+static_outside = "/home/andim/projects/nedrex/nedrexdb_v2d/nedrex_files/nedrex_api/static"
 data = "/data/nedrex_files/nedrex_api/data"
-scripts = "/app/nedrexdb/nedrexdb/scripts"
+data_outside = "/home/andim/projects/nedrex/nedrexdb_v2d/nedrex_files/nedrex_api/data"
+scripts = "/app/nedrexapi/scripts"
 
 [tools]
 bicon_python = "/opt/conda/miniconda3/envs/bicon/bin/python3"

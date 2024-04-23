@@ -20,11 +20,22 @@ RUN add-apt-repository \
 
 RUN apt-get update && apt-get install -y docker-ce docker-ce-cli containerd.io
 
-RUN apt-get update && apt-get install -y unzip
+RUN apt-get update && apt-get install -y unzip openjdk-11-jre-headless
 RUN mamba install python=3.10
 RUN mamba upgrade pip
+RUN mamba install git
 
 WORKDIR /app/nedrexapi
 COPY . ./
+
+RUN git submodule update --init --recursive
+
+RUN ls ./scripts
+#WORKDIR ./scripts
+#RUN wget https://github.com/repotrial/MultiSteinerBackend/archive/refs/tags/1.0.zip -O MultiSteinerBackend.zip
+#RUN unzip MultiSteinerBackend.zip
+#RUN mv MultiSteinerBackend-1.0 MultiSteinerBackend
+#RUN rm MultiSteinerBackend.zip
+#WORKDIR ../
 
 RUN pip install .

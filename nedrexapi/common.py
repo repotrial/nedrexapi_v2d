@@ -61,15 +61,28 @@ _MUST_COLL = get_api_collection("must_")
 _VALIDATION_COLL = get_api_collection("validation_")
 
 # Directories
-_DIAMOND_DIR = Path(_config["api.directories.data"]) / "diamond_"
-_MUST_DIR = Path(_config["api.directories.data"]) / "must_"
-_ROBUST_DIR = Path(_config["api.directories.data"]) / "robust_"
-_BICON_DIR = Path(_config["api.directories.data"]) / "bicon_"
-_GRAPH_DIR = Path(_config["api.directories.data"]) / "graphs_"
-_CLOSENESS_DIR = Path(_config["api.directories.data"]) / "closeness_"
-_COMORBIDITOME_DIR = Path(_config["api.directories.data"]) / "comorbiditome_"
-_TRUSTRANK_DIR = Path(_config["api.directories.data"]) / "trustrank_"
-_STATIC_DIR = Path(_config["api.directories.static"])
+_DATA_DIR = Path(_config["api.directories.data_outside"])
+_DATA_DIR_INTERNAL = Path(_config["api.directories.data"])
+_STATIC_DIR = Path(_config["api.directories.static_outside"])
+_STATIC_DIR_INTERNAL = Path(_config["api.directories.static"])
+
+_DIAMOND_SUFFIX = "diamond_"
+_MUST_SUFFIX = "must_"
+_ROBUST_SUFFIX = "robust_"
+_BICON_SUFFIX = "bicon_"
+_GRAPH_SUFFIX = "graphs_"
+_CLOSENESS_SUFFIX = "closeness_"
+_COMORBIDITOME_SUFFIX = "comorbiditome_"
+_TRUSTRANK_SUFFIX = "trustrank_"
+
+_DIAMOND_DIR = _DATA_DIR / _DIAMOND_SUFFIX
+_MUST_DIR = _DATA_DIR / _MUST_SUFFIX
+_ROBUST_DIR = _DATA_DIR / _ROBUST_SUFFIX
+_BICON_DIR = _DATA_DIR / _BICON_SUFFIX
+_GRAPH_DIR = _DATA_DIR / _GRAPH_SUFFIX
+_CLOSENESS_DIR = _DATA_DIR / _CLOSENESS_SUFFIX
+_COMORBIDITOME_DIR = _STATIC_DIR / _COMORBIDITOME_SUFFIX
+_TRUSTRANK_DIR = _DATA_DIR / _TRUSTRANK_SUFFIX
 
 
 for directory in [
@@ -89,7 +102,7 @@ for directory in [
 limiter = Limiter(
     key_func=get_remote_address,
     default_limits=[_config["api.rate_limit"]],
-    storage_uri=f"redis://localhost:{_config['api.redis_port']}/{_config['api.redis_rate_limit_db']}",
+    storage_uri=f"redis://{_config['api.redis_host']}:{_config['api.redis_port_internal']}/{_config['api.redis_rate_limit_db']}",
 )
 
 

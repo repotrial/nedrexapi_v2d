@@ -11,7 +11,8 @@ from nedrexapi.common import (
     _API_KEY_HEADER_ARG,
     _CLOSENESS_COLL,
     _CLOSENESS_COLL_LOCK,
-    _CLOSENESS_DIR,
+    _CLOSENESS_SUFFIX,
+    _DATA_DIR_INTERNAL,
     check_api_key_decorator,
 )
 from nedrexapi.tasks import queue_and_wait_for_job
@@ -105,4 +106,4 @@ def closeness_download(uid: str, x_api_key: str = _API_KEY_HEADER_ARG):
     if result["status"] == "failed":
         raise _HTTPException(status_code=404, detail=f"No results for closeness job with UID {uid!r} (failed)")
 
-    return _Response((_CLOSENESS_DIR / f"{uid}.txt").open("rb").read(), media_type="text/plain")
+    return _Response((_DATA_DIR_INTERNAL /_CLOSENESS_SUFFIX / f"{uid}.txt").open("rb").read(), media_type="text/plain")

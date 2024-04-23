@@ -7,7 +7,8 @@ from nedrexapi.common import (
     _API_KEY_HEADER_ARG,
     _ROBUST_COLL,
     _ROBUST_COLL_LOCK,
-    _ROBUST_DIR,
+    _ROBUST_SUFFIX,
+    _DATA_DIR_INTERNAL,
     check_api_key_decorator,
 )
 from nedrexapi.networks import normalise_seeds_and_determine_type
@@ -98,6 +99,6 @@ def robust_results(uid: str, x_api_key: str = _API_KEY_HEADER_ARG):
         raise HTTPException(status_code=102, detail=f"ROBUST job with UID {uid!r} is still running")
     if result["status"] == "failed":
         raise HTTPException(status_code=404, detail=f"No results for ROBUST job with UID {uid!r} (failed)")
-    with open(f"{_ROBUST_DIR}/{uid}.graphml") as f:
+    with open(f"{_DATA_DIR_INTERNAL}/{_ROBUST_SUFFIX}/{uid}.graphml") as f:
         x = f.read()
     return Response(x, media_type="text/plain")

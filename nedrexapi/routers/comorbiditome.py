@@ -24,7 +24,8 @@ from nedrexapi.common import (
     _API_KEY_HEADER_ARG,
     _COMORBIDITOME_COLL,
     _COMORBIDITOME_COLL_LOCK,
-    _COMORBIDITOME_DIR,
+    _COMORBIDITOME_SUFFIX,
+    _STATIC_DIR_INTERNAL,
     check_api_key_decorator,
 )
 from nedrexapi.config import config as _config
@@ -334,7 +335,7 @@ def get_graph(uid: str, format: ValidFormats, fname: str, x_api_key: str = _API_
     if not result["status"] == "completed":
         raise _HTTPException(status_code=400, detail=f"Comorbiditome build job with UID {uid!r} is not completed")
 
-    graph_path = _COMORBIDITOME_DIR / f"{uid}.graphml"
+    graph_path = _STATIC_DIR_INTERNAL / _COMORBIDITOME_SUFFIX / f"{uid}.graphml"
     g = _nx.read_graphml(graph_path)
 
     if format == "graphml":
