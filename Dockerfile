@@ -1,6 +1,4 @@
 FROM andimajore/mamba_mantic:latest
-ARG ACCESS_TOKEN
-ENV ACCESS_TOKEN=$ACCESS_TOKEN
 RUN apt-get update && apt-get upgrade -y
 
 RUN apt-get update \
@@ -30,15 +28,8 @@ RUN mamba install git
 WORKDIR /app/nedrexapi
 COPY . ./
 
-#RUN git clone --recurse-submodules https://AndiMajore:${ACCESS_TOKEN}@github.com/repotrial/nedrexapi_v2d
 RUN git submodule update --init --recursive
 
 RUN ls ./scripts
-#WORKDIR ./scripts
-#RUN wget https://github.com/repotrial/MultiSteinerBackend/archive/refs/tags/1.0.zip -O MultiSteinerBackend.zip
-#RUN unzip MultiSteinerBackend.zip
-#RUN mv MultiSteinerBackend-1.0 MultiSteinerBackend
-#RUN rm MultiSteinerBackend.zip
-#WORKDIR ../
 
 RUN pip install .
