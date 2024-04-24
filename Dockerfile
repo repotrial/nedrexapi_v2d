@@ -23,13 +23,8 @@ RUN apt-get update && apt-get install -y docker-ce docker-ce-cli containerd.io
 RUN apt-get update && apt-get install -y unzip openjdk-11-jre-headless
 RUN mamba install python=3.10
 RUN mamba upgrade pip
-RUN mamba install git
 
 WORKDIR /app/nedrexapi
 COPY . ./
-
-#RUN git submodule update --init --recursive
-
-RUN ls ./scripts
 
 RUN pip install .

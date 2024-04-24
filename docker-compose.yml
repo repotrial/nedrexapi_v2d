@@ -20,15 +20,9 @@ services:
       - nedrexdb_default
 
   worker_open:
-    image: nedrexapi
+    image: ghcr.io/repotrial/nedrexapi_v2d:master
     build:
       context: .
-#      args:
-#        ACCESS_TOKEN: ${ACCESS_TOKEN}
-#    environment:
-#      - ACCESS_TOKEN=${ACCESS_TOKEN}
-#    env_file:
-#      - env/env.prod
     container_name: nedrexapi_worker_open
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
@@ -50,7 +44,7 @@ services:
       - nedrexdb_default
     restart: always
   runner_open:
-    image: nedrexapi
+    image: ghcr.io/repotrial/nedrexapi_v2d:master
     container_name: nedrexapi_open
     ports:
       - 7123:7123
@@ -65,7 +59,7 @@ services:
     networks:
       - nedrexdb_default
   worker_licensed:
-    image: nedrexapi
+    image: ghcr.io/repotrial/nedrexapi_v2d:master
     container_name: nedrexapi_worker_licensed
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
@@ -87,7 +81,7 @@ services:
       - nedrexdb_default
     restart: always
   runner_licensed:
-    image: nedrexapi
+    image: ghcr.io/repotrial/nedrexapi_v2d:master
     container_name: nedrexapi_licensed
     ports:
       - 6123:8123
