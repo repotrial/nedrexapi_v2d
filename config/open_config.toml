@@ -119,7 +119,7 @@ filename = "meddra.json"
 
 [sources.chembl]
 [sources.chembl.sqlite]
-url = "https://ftp.ebi.ac.uk/pub/databases/chembl/ChEMBLdb/latest/chembl_33_sqlite.tar.gz"
+url = "https://ftp.ebi.ac.uk/pub/databases/chembl/ChEMBLdb/latest/chembl_34_sqlite.tar.gz"
 
 [sources.chembl.unichem]
 url = "https://ftp.ebi.ac.uk/pub/databases/chembl/UniChem/data/wholeSourceMapping/src_id1/src1src2.txt.gz"
@@ -129,7 +129,7 @@ url = "https://ftp.ebi.ac.uk/pub/databases/chembl/UniChem/data/wholeSourceMappin
 url = "https://ftp.ncbi.nlm.nih.gov/pub/clinvar/vcf_GRCh38/clinvar.vcf.gz"
 
 [sources.clinvar.human_data_xml]
-url = "https://ftp.ncbi.nlm.nih.gov/pub/clinvar/xml/ClinVarFullRelease_00-latest.xml.gz"
+url = "https://ftp.ncbi.nlm.nih.gov/pub/clinvar/xml/ClinVarVCVRelease_00-latest.xml.gz"
 
 [sources.ctd]
 [sources.ctd.chemical_disease_relationships]
@@ -141,11 +141,11 @@ url = "https://www.disgenet.org/static/disgenet_ap1/files/downloads/curated_gene
 
 [sources.drugbank]
 [sources.drugbank.open]
-filename = "all-drugbank-vocabulary.zip"
+filename = "all_drugbank_vocabulary.zip"
 
 [sources.drug_central]
 [sources.drug_central.postgres_dump]
-url = "https://unmtid-shinyapps.net/download/drugcentral.dump.010_05_2021.sql.gz"
+url = "https://unmtid-shinyapps.net/download/drugcentral.dump.11012023.sql.gz"
 filename = "drug_central.sql.gz"
 
 [sources.go]
