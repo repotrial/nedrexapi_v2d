@@ -1,5 +1,6 @@
 [api]
-mode="live"
+mode="open"
+status="live"
 port=7123
 host="127.0.0.1"
 base="/"
@@ -65,7 +66,7 @@ data_outside = "/home/andim/projects/nedrex/nedrexdb_v2d/nedrex_files/nedrex_api
 scripts = "/app/nedrexapi/scripts"
 
 [tools]
-bicon_python = "/opt/conda/miniconda3/envs/bicon/bin/python3"
+bicon_python = "/opt/conda/envs/bicon/bin/python"
 
 
 [db]

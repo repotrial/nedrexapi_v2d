@@ -16,7 +16,7 @@ from nedrexapi.common import (
     _API_KEY_HEADER_ARG,
     _BICON_COLL,
     _BICON_COLL_LOCK,
-    _BICON_DIR,
+    _BICON_DIR_INTERNAL,
     check_api_key_decorator,
 )
 from nedrexapi.tasks import queue_and_wait_for_job
@@ -62,7 +62,7 @@ def bicon_submit(
     if existing:
         return existing["uid"]
 
-    upload_dir = _BICON_DIR / f"{uid}"
+    upload_dir = _BICON_DIR_INTERNAL / f"{uid}"
     upload_dir.mkdir()
     upload = upload_dir / f"{uid}{ext}"
 
@@ -106,7 +106,7 @@ def bicon_clustermap(uid: str, x_api_key: str = _API_KEY_HEADER_ARG):
     if result["status"] == "failed":
         raise _HTTPException(status_code=404, detail=f"No results for BiCoN job with UID {uid!r} (failed)")
 
-    with _zipfile.ZipFile(_BICON_DIR / (uid + ".zip"), "r") as f:
+    with _zipfile.ZipFile(_BICON_DIR_INTERNAL / (uid + ".zip"), "r") as f:
         x = f.open(f"{uid}/clustermap.png").read()
     return _Response(x, media_type="text/plain")
 
@@ -123,4 +123,4 @@ def bicon_download(uid: str, x_api_key: str = _API_KEY_HEADER_ARG):
     if result["status"] == "failed":
         raise _HTTPException(status_code=404, detail=f"No results for BiCoN job with UID {uid!r} (failed)")
 
-    return _Response((_BICON_DIR / (uid + ".zip")).open("rb").read(), media_type="text/plain")
+    return _Response((_BICON_DIR_INTERNAL / (uid + ".zip")).open("rb").read(), media_type="text/plain")

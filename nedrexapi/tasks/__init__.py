@@ -4,7 +4,7 @@ from nedrexapi.config import config, parse_config
 from nedrexapi.db import MongoInstance
 
 parse_config(os.environ["NEDREX_CONFIG"])
-MongoInstance.connect(config["api.mode"])
+MongoInstance.connect(config["api.status"])
 
 import time
 

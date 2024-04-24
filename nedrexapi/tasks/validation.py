@@ -3,7 +3,7 @@ import tempfile
 from contextlib import contextmanager
 
 from nedrexapi.common import (
-    _STATIC_DIR,
+    _STATIC_DIR_INTERNAL,
     _VALIDATION_COLL,
     _VALIDATION_COLL_LOCK,
     generate_validation_static_files,
@@ -47,9 +47,9 @@ def joint_validation(uid):
         logger.info(f"starting joint validation job {uid!r}")
 
     if details["module_member_type"] == "gene":
-        network_file = f"{_STATIC_DIR / 'GGI.gt'}"
+        network_file = f"{_STATIC_DIR_INTERNAL / 'GGI.gt'}"
     elif details["module_member_type"] == "protein":
-        network_file = f"{_STATIC_DIR / 'PPI-NeDRexDB-concise.gt'}"
+        network_file = f"{_STATIC_DIR_INTERNAL / 'PPI-NeDRexDB-concise.gt'}"
     else:
         raise Exception(f"Invalid module_member_type in joint validation request {uid!r}")
 
@@ -118,9 +118,9 @@ def module_validation(uid: str):
         logger.info(f"starting module-based validation job {uid!r}")
 
     if details["module_member_type"] == "gene":
-        network_file = f"{_STATIC_DIR / 'GGI.gt'}"
+        network_file = f"{_STATIC_DIR_INTERNAL / 'GGI.gt'}"
     elif details["module_member_type"] == "protein":
-        network_file = f"{_STATIC_DIR / 'PPI-NeDRexDB-concise.gt'}"
+        network_file = f"{_STATIC_DIR_INTERNAL / 'PPI-NeDRexDB-concise.gt'}"
     else:
         raise Exception(f"Invalid module_member_type in joint validation request {uid!r}")
 

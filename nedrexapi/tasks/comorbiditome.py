@@ -11,8 +11,8 @@ import networkx as nx  # type: ignore
 from nedrexapi.common import (
     _COMORBIDITOME_COLL,
     _COMORBIDITOME_COLL_LOCK,
-    _COMORBIDITOME_DIR,
-    _STATIC_DIR,
+    _COMORBIDITOME_DIR_INTERNAL,
+    _STATIC_DIR_INTERNAL,
 )
 from nedrexapi.db import MongoInstance
 from nedrexapi.logger import logger
@@ -34,7 +34,7 @@ def apply_typemap(row: dict[str, _Any], type_map: _TypeMap) -> None:
 
 
 def parse_comorbiditome() -> _Generator[dict[str, _Any], None, None]:
-    fname = _STATIC_DIR / "comorbiditome.txt"
+    fname = _STATIC_DIR_INTERNAL / "comorbiditome.txt"
     with fname.open() as f:
         fieldnames = next(f)[1:-1].split("\t")
         reader = _DictReader(f, fieldnames=fieldnames, delimiter="\t")
@@ -45,7 +45,7 @@ def parse_comorbiditome() -> _Generator[dict[str, _Any], None, None]:
 
 
 def parse_code_description_map() -> dict[str, str]:
-    fname = _STATIC_DIR / "scraped_icd10_codes_2019.tsv"
+    fname = _STATIC_DIR_INTERNAL / "scraped_icd10_codes_2019.tsv"
     dct: dict[str, str] = {}
     with fname.open() as f:
         for line in f:
@@ -128,7 +128,8 @@ def run_comorbiditome_build(uid: str):
 
     nx.set_node_attributes(g, "Disorder", name="type")
 
-    nx.write_graphml(g, _COMORBIDITOME_DIR / f"{uid}.graphml")
+    #TODO create dir before writing if not exists
+    nx.write_graphml(g, _COMORBIDITOME_DIR_INTERNAL / f"{uid}.graphml")
 
     with _COMORBIDITOME_COLL_LOCK:
         _COMORBIDITOME_COLL.update_one({"uid": uid}, {"$set": {"status": "completed"}})

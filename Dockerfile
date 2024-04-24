@@ -18,13 +18,19 @@ RUN add-apt-repository \
    lunar \
    stable"
 
-RUN apt-get update && apt-get install -y docker-ce docker-ce-cli containerd.io
+RUN apt-get update && apt-get install -y docker-ce docker-ce-cli containerd.io zip unzip openjdk-11-jre-headless
 
-RUN apt-get update && apt-get install -y unzip openjdk-11-jre-headless
 RUN mamba install python=3.10
 RUN mamba upgrade pip
+RUN mamba install -c conda-forge graph-tool poetry
 
 WORKDIR /app/nedrexapi
-COPY . ./
 
-RUN pip install .
+RUN mamba create -n bicon python=3.8
+RUN mamba run -n bicon pip install git+https://github.com/biomedbigdata/BiCoN.git click networkx==2.8.8
+
+COPY pyproject.toml poetry.lock ./
+RUN poetry config virtualenvs.create false
+RUN poetry install --no-dev
+
+COPY . ./

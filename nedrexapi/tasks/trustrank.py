@@ -11,6 +11,10 @@ from nedrexapi.common import (
     _TRUSTRANK_COLL,
     _TRUSTRANK_COLL_LOCK,
     _TRUSTRANK_DIR,
+    _TRUSTRANK_SUFFIX,
+    _STATIC_DIR,
+    _STATIC_DIR_INTERNAL,
+    _DATA_DIR_INTERNAL,
     generate_ranking_static_files,
 )
 from nedrexapi.config import config
@@ -27,9 +31,8 @@ def run_trustrank_wrapper(uid):
 
 
 def run_trustrank(uid):
-    # FIXME: figure out why ranking_file cannot be found at specified location and is regenerated every time.
-    ranking_file = f"{config['api.directories.static']}/{config['api.mode']}/PPDr-for-ranking.graphml"
-    if not os.path.exists(ranking_file):
+    ranking_file = f"{config['api.mode']}/PPDr-for-ranking.graphml"
+    if not os.path.exists(os.path.join(_STATIC_DIR_INTERNAL, ranking_file)):
         generate_ranking_static_files()
 
     with _TRUSTRANK_COLL_LOCK:
@@ -45,9 +48,12 @@ def run_trustrank(uid):
     tmp.flush()
 
     outfile = _TRUSTRANK_DIR / f"{uid}.txt"
+    outfile_internal = _DATA_DIR_INTERNAL / _TRUSTRANK_SUFFIX / f"{uid}.txt"
 
     command = [
         f"{config['api.directories.scripts']}/run_trustrank.py",
+        "-e", _STATIC_DIR,
+        "-i", _STATIC_DIR_INTERNAL,
         "-n",
         ranking_file,
         "-s",
@@ -84,7 +90,7 @@ def run_trustrank(uid):
 
     results = {}
 
-    with outfile.open("r") as f:
+    with outfile_internal.open("r") as f:
         keep = []
         reader = DictReader(f, delimiter="\t")
         for _ in range(details["N"]):

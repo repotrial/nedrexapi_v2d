@@ -9,7 +9,7 @@ from nedrexapi.config import config, parse_config
 from nedrexapi.db import MongoInstance, create_directories
 
 parse_config(os.environ["NEDREX_CONFIG"])
-MongoInstance.connect(config["api.mode"])
+MongoInstance.connect(config["api.status"])
 create_directories()
 
 from nedrexapi.routers import admin as _admin

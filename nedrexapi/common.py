@@ -1,3 +1,4 @@
+import os
 import datetime as _datetime
 import subprocess as _subprocess
 from functools import wraps
@@ -19,10 +20,11 @@ from nedrexapi.config import config as _config
 from nedrexapi.db import MongoInstance
 from nedrexapi.logger import logger
 
-_MONGO_CLIENT = _MongoClient(host=_config["db.live.mongo_name"],port=_config["api.mongo_port_internal"])
+_MONGO_CLIENT = _MongoClient(host=_config["db.live.mongo_name"], port=_config["api.mongo_port_internal"])
 _MONGO_DB = _MONGO_CLIENT[_config["api.mongo_db"]]
 
-_REDIS = _Redis.from_url(f"redis://{_config['api.redis_host']}:{_config['api.redis_port_internal']}/{_config['api.redis_nedrex_db']}")
+_REDIS = _Redis.from_url(
+    f"redis://{_config['api.redis_host']}:{_config['api.redis_port_internal']}/{_config['api.redis_nedrex_db']}")
 _STATUS = _RedisDict(redis=_REDIS, key="static-file-status")
 
 # Locks
@@ -78,26 +80,24 @@ _TRUSTRANK_SUFFIX = "trustrank_"
 _DIAMOND_DIR = _DATA_DIR / _DIAMOND_SUFFIX
 _MUST_DIR = _DATA_DIR / _MUST_SUFFIX
 _ROBUST_DIR = _DATA_DIR / _ROBUST_SUFFIX
-_BICON_DIR = _DATA_DIR / _BICON_SUFFIX
+_BICON_DIR_INTERNAL = _DATA_DIR_INTERNAL / _BICON_SUFFIX
 _GRAPH_DIR = _DATA_DIR / _GRAPH_SUFFIX
 _CLOSENESS_DIR = _DATA_DIR / _CLOSENESS_SUFFIX
-_COMORBIDITOME_DIR = _STATIC_DIR / _COMORBIDITOME_SUFFIX
+_COMORBIDITOME_DIR_INTERNAL = _STATIC_DIR_INTERNAL / _COMORBIDITOME_SUFFIX
 _TRUSTRANK_DIR = _DATA_DIR / _TRUSTRANK_SUFFIX
-
 
 for directory in [
     _DIAMOND_DIR,
     _MUST_DIR,
     _ROBUST_DIR,
-    _BICON_DIR,
+    _BICON_DIR_INTERNAL,
     _GRAPH_DIR,
     _CLOSENESS_DIR,
     _TRUSTRANK_DIR,
-    _STATIC_DIR,
-    _COMORBIDITOME_DIR,
+    _STATIC_DIR_INTERNAL,
+    _COMORBIDITOME_DIR_INTERNAL
 ]:
     directory.mkdir(exist_ok=True, parents=True)
-
 
 limiter = Limiter(
     key_func=get_remote_address,
@@ -116,7 +116,7 @@ def generate_ranking_static_files():
 
     logger.info("generating static files for ranking routes")
     proc = _subprocess.Popen(
-        ["python", f"{_config['api.directories.scripts']}/generate_ranking_input_networks.py"],
+        ["python", f"{_config['api.directories.scripts']}/generate_ranking_input_networks.py", _STATIC_DIR_INTERNAL],
         cwd=_config["api.directories.static"],
         stdout=_subprocess.PIPE,
         stderr=_subprocess.PIPE,
@@ -212,7 +212,6 @@ def check_api_key_decorator(func):
 
 
 _API_KEY_HEADER_ARG = _Header(default=None, include_in_schema=_config["api.require_api_keys"])
-
 
 NODE_COLLECTIONS = [
     node_coll

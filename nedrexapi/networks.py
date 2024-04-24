@@ -9,8 +9,8 @@ from nedrexapi.logger import logger
 
 _NEWLINE = "\n"
 _NEWLINE_TAB = "\n\t"
-_NEO4J_PORT = config[f'db.{config["api.mode"]}.neo4j_bolt_port_internal']
-_NEO4J_HOST = config[f'db.{config["api.mode"]}.neo4j_name']
+_NEO4J_PORT = config[f'db.{config["api.status"]}.neo4j_bolt_port_internal']
+_NEO4J_HOST = config[f'db.{config["api.status"]}.neo4j_name']
 _NEO4J_DRIVER = _GraphDatabase.driver(uri=f"bolt://{_NEO4J_HOST}:{_NEO4J_PORT}")
 
 

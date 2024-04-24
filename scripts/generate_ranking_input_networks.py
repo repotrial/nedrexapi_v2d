@@ -1,12 +1,12 @@
 import time
 from urllib.request import urlretrieve
 import requests  # type: ignore
-import os
+import os, sys
 import graph_tool as gt
 import networkx as nx
 
 
-apiNetwork_path = "/srv/nedrex/nedrex_v2/nedrex_files/nedrex_api/static/"
+apiNetwork_path = sys.argv[1]
 os.chdir(apiNetwork_path)
 # get the network containing protein-protein and protein-drug interactions with proper parameters via API
 
@@ -14,8 +14,9 @@ routes = [{"name":"open", "key":False, "base_url":"https://api.nedrex.net/open"}
           {"name":"licensed", "key":True, "base_url":"https://api.nedrex.net/licensed"}]
 
 for route in routes:
-    os.system(f"mkdir -p {apiNetwork_path+route['name']}")
-    os.chdir(f"{apiNetwork_path+route['name']}")
+    path = os.path.join(apiNetwork_path, route['name'])
+    os.system(f"mkdir -p {path}")
+    os.chdir(path)
     base_url = route["base_url"]
     headers = {}
     if route["key"]:
@@ -66,7 +67,7 @@ for route in routes:
             if chunk:
                 f.write(chunk)
 
-    G = nx.read_graphml(f"{apiNetwork_path}{route['name']}/{fname}.graphml")
+    G = nx.read_graphml(os.path.join(path, f"{fname}.graphml"))
     G_und = G.to_undirected()
 
     node_list = set(G_und.nodes)
@@ -84,10 +85,10 @@ for route in routes:
                 del G_und.edges[e][attr]
 
     network_name = "PPDr-for-ranking.graphml"
-    nx.write_graphml(G_und, f"{apiNetwork_path}{route['name']}/{network_name}")
+    nx.write_graphml(G_und, os.path.join(path, network_name))
 
     gg = gt.load_graph("PPDr-for-ranking.graphml")
-    gg.save(f"{apiNetwork_path}{route['name']}/PPDr-for-ranking.gt")
+    gg.save(os.path.join(path,"PPDr-for-ranking.gt"))
 
     # Remove temporary graphs
-    os.remove(f"{apiNetwork_path}{route['name']}/temp-PPDr.graphml")
+    os.remove(os.path.join(path,"temp-PPDr.graphml"))

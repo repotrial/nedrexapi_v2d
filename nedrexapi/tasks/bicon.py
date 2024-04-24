@@ -4,7 +4,7 @@ import shutil
 import subprocess
 import traceback
 
-from nedrexapi.common import _BICON_COLL, _BICON_COLL_LOCK, _BICON_DIR
+from nedrexapi.common import _BICON_COLL, _BICON_COLL_LOCK, _BICON_DIR_INTERNAL
 from nedrexapi.config import config
 from nedrexapi.logger import logger
 from nedrexapi.networks import (
@@ -32,13 +32,13 @@ def run_bicon(uid):
         _BICON_COLL.update_one({"uid": uid}, {"$set": {"status": "running"}})
         logger.info(f"starting BiCoN job {uid!r}")
 
-    workdir = _BICON_DIR / uid
+    workdir = _BICON_DIR_INTERNAL / uid
 
     # If a resubmission, it may be the case that the directory has already been zipped.
     # This block unzips that file to re-run BiCoN on the original input files.
     zip_path = f"{workdir.resolve()}.zip"
     if os.path.isfile(zip_path):
-        subprocess.call(["unzip", zip_path], cwd=f"{_BICON_DIR}")
+        subprocess.call(["unzip", zip_path], cwd=f"{_BICON_DIR_INTERNAL}")
         os.remove(zip_path)
 
     if details["network"] == "DEFAULT":
@@ -92,7 +92,7 @@ def run_bicon(uid):
         return
 
     # Load the genes selected, so they can be stored in MongoDB
-    result_json = (_BICON_DIR / uid) / "results.json"
+    result_json = (_BICON_DIR_INTERNAL / uid) / "results.json"
     with result_json.open("r") as f:
         results = json.load(f)
     # Find any edges
@@ -116,7 +116,7 @@ def run_bicon(uid):
 
     command = ["zip", "-r", "-D", f"{uid}.zip", f"{uid}"]
 
-    res = subprocess.call(command, cwd=f"{_BICON_DIR}")
+    res = subprocess.call(command, cwd=f"{_BICON_DIR_INTERNAL}")
     if res != 0:
         with _BICON_COLL_LOCK:
             _BICON_COLL.update_one(
@@ -130,7 +130,7 @@ def run_bicon(uid):
             )
         return
 
-    shutil.rmtree(f"{_BICON_DIR / uid}")
+    shutil.rmtree(f"{_BICON_DIR_INTERNAL / uid}")
     with _BICON_COLL_LOCK:
         _BICON_COLL.update_one({"uid": uid}, {"$set": {"status": "completed", "result": results}})
 
