@@ -40,6 +40,8 @@ if config.get("api.base") is not None:
             base = base[:-1]
         if not base.startswith("/"):
             base = f"/{base}"
+        if base == "/":
+            base = ""
 
 
 app = FastAPI(
