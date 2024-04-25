@@ -60,7 +60,7 @@ For a tutorial on using the API, please consult
     version="2.0.0a",
     docs_url=None,
     redoc_url=base,
-    openapi_url=f"{base}/openapi.json")
+    openapi_url=f"{base}/openapi.json"
 )
 
 if config["api.rate_limiting_enabled"]:
