@@ -49,7 +49,6 @@ services:
     ports:
       - 7123:7123
     volumes:
-#      - /var/run/docker.sock:/var/run/docker.sock
       - ./config/open_config.toml:/app/nedrexapi/.open_config.toml
       - /home/andim/projects/nedrex/nedrexdb_v2d/nedrex_files:/data/nedrex_files
       - /tmp:/tmp
@@ -86,7 +85,6 @@ services:
     ports:
       - 6123:8123
     volumes:
-#      - /var/run/docker.sock:/var/run/docker.sock
       - ./config/licensed_config.toml:/app/nedrexapi/.licensed_config.toml
       - /home/andim/projects/nedrex/nedrexdb_v2d/nedrex_files:/data/nedrex_files
       - /tmp:/tmp

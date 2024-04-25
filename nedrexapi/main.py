@@ -37,6 +37,11 @@ if config.get("api.base") is not None:
     if config["api.base"] != "/":
         base = config["api.base"]
 
+def _get_prefix(base: str, prefix: str):
+    if base:
+        prefix = f"{base}{prefix}" if base != "/" else prefix
+    return prefix[:-1] if prefix.endswith("/") else prefix
+
 
 app = FastAPI(
     title="NeDRexAPI",
@@ -56,7 +61,7 @@ For a tutorial on using the API, please consult
     version="2.0.0a",
     docs_url=None,
     redoc_url=base,
-    openapi_url=f"{base}openapi.json",
+    openapi_url=_get_prefix(base, "openapi.json")
 )
 
 if config["api.rate_limiting_enabled"]:
@@ -67,10 +72,6 @@ if config["api.rate_limiting_enabled"]:
     app.add_middleware(SlowAPIMiddleware)
 
 
-def _get_prefix(base: str, prefix: str):
-    if base:
-        prefix = f"{base}{prefix}" if base != "/" else prefix
-    return prefix[:-1] if prefix.endswith("/") else prefix
 
 
 bases = ["/"]
