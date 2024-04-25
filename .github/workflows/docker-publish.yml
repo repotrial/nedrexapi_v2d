@@ -51,7 +51,6 @@ jobs:
         with:
           install: true
           use: true
-          buildkitd-flags: --debug
 
       # Login against a Docker registry except on PR
       # https://github.com/docker/login-action
