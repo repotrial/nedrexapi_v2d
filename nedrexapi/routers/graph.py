@@ -12,6 +12,7 @@ from nedrexapi.common import (
     _GRAPH_COLL,
     _GRAPH_COLL_LOCK,
     _GRAPH_DIR,
+    _GRAPH_DIR_INTERNAL,
     EDGE_COLLECTIONS,
     NODE_COLLECTIONS,
     check_api_key_decorator,
@@ -259,7 +260,7 @@ def graph_download(uid: str, x_api_key: str = _API_KEY_HEADER_ARG):
     data = _GRAPH_COLL.find_one({"uid": uid})
 
     if data and data["status"] == "completed":
-        return _Response((_GRAPH_DIR / f"{uid}.graphml").open("r").read(), media_type="text/plain")
+        return _Response((_GRAPH_DIR_INTERNAL / f"{uid}.graphml").open("r").read(), media_type="text/plain")
     elif data and data["status"] == "running":
         raise _HTTPException(status_code=102, detail=f"Graph with UID {uid!r} does not have completed status.")
     elif data and data["status"] == "failed":
@@ -283,7 +284,7 @@ def graph_download_ii(fname: str, uid: str, x_api_key: str = _API_KEY_HEADER_ARG
     data = _GRAPH_COLL.find_one({"uid": uid})
 
     if data and data["status"] == "completed":
-        return _Response((_GRAPH_DIR / f"{uid}.graphml").open("r").read(), media_type="text/plain")
+        return _Response((_GRAPH_DIR_INTERNAL / f"{uid}.graphml").open("r").read(), media_type="text/plain")
 
     elif data and data["status"] == "running":
         raise _HTTPException(status_code=102, detail=f"Graph with UID {uid!r} does not have completed status.")
