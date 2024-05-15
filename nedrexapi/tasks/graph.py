@@ -4,7 +4,7 @@ from itertools import chain
 
 import networkx as nx  # type: ignore
 
-from nedrexapi.common import _GRAPH_COLL, _GRAPH_COLL_LOCK, _GRAPH_DIR, NODE_COLLECTIONS
+from nedrexapi.common import _GRAPH_COLL, _GRAPH_COLL_LOCK, _GRAPH_DIR, _GRAPH_DIR_INTERNAL, NODE_COLLECTIONS
 from nedrexapi.db import MongoInstance
 from nedrexapi.logger import logger
 
@@ -273,7 +273,7 @@ def graph_constructor(uid):
 
         nx.set_edge_attributes(G, updates)
 
-    nx.write_graphml(g, f"{_GRAPH_DIR / query['uid']}.graphml")
+    nx.write_graphml(g, f"{_GRAPH_DIR_INTERNAL / query['uid']}.graphml")
     with _GRAPH_COLL_LOCK:
         _GRAPH_COLL.update_one({"uid": query["uid"]}, {"$set": {"status": "completed"}})
 
