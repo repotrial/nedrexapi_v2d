@@ -93,6 +93,7 @@ for directory in [
     _ROBUST_DIR,
     _BICON_DIR_INTERNAL,
     _GRAPH_DIR,
+    _GRAPH_DIR_INTERNAL,
     _CLOSENESS_DIR,
     _TRUSTRANK_DIR,
     _STATIC_DIR_INTERNAL,
