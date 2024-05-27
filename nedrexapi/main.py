@@ -79,30 +79,30 @@ def _get_prefix(base: str, prefix: str):
     return prefix[:-1] if prefix.endswith("/") else prefix
 
 
-bases = ["/"]
+app_base = "/"
 
 if config.get("api.base") is not None:
     if config["api.base"] != "/":
-        bases = [config["api.base"], "/"]
+        app_base = config["api.base"]
 
-for app_base in bases:
-    app.include_router(_general.router, prefix=_get_prefix(app_base, "/"), tags=["General"])
-    app.include_router(_disorder.router, prefix=_get_prefix(app_base, "/disorder"), tags=["Disorder"])
-    app.include_router(_ppi.router, prefix=_get_prefix(app_base, "/"), tags=["PPI routes"])
-    app.include_router(_relations.router, prefix=_get_prefix(app_base, "/relations"), tags=["Relations"])
-    app.include_router(_graph.router, prefix=_get_prefix(app_base, "/graph"), tags=["Graph"])
-    app.include_router(_bicon.router, prefix=_get_prefix(app_base, "/bicon"), tags=["BiCoN"])
-    app.include_router(_static.router, prefix=_get_prefix(app_base, "/static"), tags=["Static"])
-    app.include_router(_must.router, prefix=_get_prefix(app_base, "/must"), tags=["MuST"])
-    app.include_router(_diamond.router, prefix=_get_prefix(app_base, "/diamond"), tags=["DIAMOnD"])
-    app.include_router(_domino.router, prefix=_get_prefix(app_base, "/domino"), tags=["DOMINO"])
-    app.include_router(_robust.router, prefix=_get_prefix(app_base, "/robust"), tags=["ROBUST"])
-    app.include_router(_kpm.router, prefix=_get_prefix(app_base, "/kpm"), tags=["KPM"])
-    app.include_router(_trustrank.router, prefix=_get_prefix(app_base, "/trustrank"), tags=["TrustRank"])
-    app.include_router(_closeness.router, prefix=_get_prefix(app_base, "/closeness"), tags=["Closeness"])
-    app.include_router(_validation.router, prefix=_get_prefix(app_base, "/validation"), tags=["Validation"])
-    app.include_router(_admin.router, prefix=_get_prefix(app_base, "/admin"), tags=["Admin"])
-    app.include_router(_variant.router, prefix=_get_prefix(app_base, "/variants"), tags=["Variants"])
-    app.include_router(_neo4j.router, prefix=_get_prefix(app_base, "/neo4j"), tags=["Neo4j"])
-    app.include_router(_comorbiditome.router, prefix=_get_prefix(app_base, "/comorbiditome"),
-                       tags=["Comorbiditome & ICD10 Mapping"])
+#for app_base in bases:
+app.include_router(_general.router, prefix=_get_prefix(app_base, "/"), tags=["General"])
+app.include_router(_disorder.router, prefix=_get_prefix(app_base, "/disorder"), tags=["Disorder"])
+app.include_router(_ppi.router, prefix=_get_prefix(app_base, "/"), tags=["PPI routes"])
+app.include_router(_relations.router, prefix=_get_prefix(app_base, "/relations"), tags=["Relations"])
+app.include_router(_graph.router, prefix=_get_prefix(app_base, "/graph"), tags=["Graph"])
+app.include_router(_bicon.router, prefix=_get_prefix(app_base, "/bicon"), tags=["BiCoN"])
+app.include_router(_static.router, prefix=_get_prefix(app_base, "/static"), tags=["Static"])
+app.include_router(_must.router, prefix=_get_prefix(app_base, "/must"), tags=["MuST"])
+app.include_router(_diamond.router, prefix=_get_prefix(app_base, "/diamond"), tags=["DIAMOnD"])
+app.include_router(_domino.router, prefix=_get_prefix(app_base, "/domino"), tags=["DOMINO"])
+app.include_router(_robust.router, prefix=_get_prefix(app_base, "/robust"), tags=["ROBUST"])
+app.include_router(_kpm.router, prefix=_get_prefix(app_base, "/kpm"), tags=["KPM"])
+app.include_router(_trustrank.router, prefix=_get_prefix(app_base, "/trustrank"), tags=["TrustRank"])
+app.include_router(_closeness.router, prefix=_get_prefix(app_base, "/closeness"), tags=["Closeness"])
+app.include_router(_validation.router, prefix=_get_prefix(app_base, "/validation"), tags=["Validation"])
+app.include_router(_admin.router, prefix=_get_prefix(app_base, "/admin"), tags=["Admin"])
+app.include_router(_variant.router, prefix=_get_prefix(app_base, "/variants"), tags=["Variants"])
+app.include_router(_neo4j.router, prefix=_get_prefix(app_base, "/neo4j"), tags=["Neo4j"])
+app.include_router(_comorbiditome.router, prefix=_get_prefix(app_base, "/comorbiditome"),
+                   tags=["Comorbiditome & ICD10 Mapping"])
