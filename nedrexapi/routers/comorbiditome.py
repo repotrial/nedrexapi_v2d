@@ -93,7 +93,7 @@ def parse_comorbiditome() -> _Generator[dict[str, _Any], None, None]:
             yield row
 
 
-@router.get("/icd10_to_mondo", summary="Map ICD10 term to MONDO")
+@router.post("/icd10_to_mondo", summary="Map ICD10 term to MONDO")
 @check_api_key_decorator
 def map_icd10_to_mondo(icd10: list[str] = _Query(None), x_api_key: str = _API_KEY_HEADER_ARG):
     """
@@ -118,7 +118,7 @@ def map_icd10_to_mondo(icd10: list[str] = _Query(None), x_api_key: str = _API_KE
     return disorder_res
 
 
-@router.get("/mondo_to_icd10", summary="Map MONDO term to ICD10")
+@router.post("/mondo_to_icd10", summary="Map MONDO term to ICD10")
 @check_api_key_decorator
 def map_mondo_to_icd10(
     mondo: list[str] = _Query(None),
