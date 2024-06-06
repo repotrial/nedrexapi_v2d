@@ -87,6 +87,12 @@ class BuildRequest(_BaseModel):
         title="Split drugs into subtypes",
         description="Replaces type on Drugs with BiotechDrug or SmallMoleculeDrug as appropriate. Default: `False`",
     )
+    reviewed_proteins: list[str] = _Field(
+        None,
+        title="Filter for reviewed/unreviewed proteins",
+        description="Filter for protein database: SwissProt [True] or Trembl [False]. "
+                    "Default: ['True', 'False']",
+    )
 
     class Config:
         extra = "forbid"
@@ -165,6 +171,10 @@ def graph_builder(
         build_request.drug_groups = ["approved"]
     check_values(build_request.drug_groups, valid_drug_groups, "drug_groups")
 
+    if build_request.reviewed_proteins is None:
+        build_request.reviewed_proteins = ["True", "False"]
+    check_values(build_request.reviewed_proteins, ["True", "False"], "reviewed_proteins")
+
     if build_request.include_omim is None:
         build_request.include_omim = True
 
@@ -225,6 +235,7 @@ def graph_builder(
                         "ppi_self_loops": False,
                         "taxid": [9606],
                         "drug_groups": ["approved"],
+                        "reviewed_proteins": ['True', 'False'],
                         "status": "completed",
                         "uid": "d961c377-cbb3-417f-a4b0-cc1996ce6f51",
                     }

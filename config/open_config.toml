@@ -3,7 +3,7 @@ mode="open"
 status="live"
 port=7123
 host="127.0.0.1"
-base="/"
+base="/open"
 
 rate_limiting_enabled = false
 rate_limit = "1/second"

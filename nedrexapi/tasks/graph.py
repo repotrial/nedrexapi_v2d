@@ -142,7 +142,9 @@ def graph_constructor(uid):
     for coll in query["nodes"]:
         # Apply the taxid filter to protein.
         if coll == "protein":
-            cursor = MongoInstance.DB()[coll].find({"taxid": {"$in": query["taxid"]}})
+            protein_query = {"taxid": {"$in": query["taxid"]}, "is_reviewed": {"$in": query["reviewed_proteins"]}}
+            cursor = MongoInstance.DB()[coll].find(protein_query)
+
         # Apply the drug groups filter to drugs.
         elif coll == "drug":
             cursor = MongoInstance.DB()[coll].find({"drugGroups": {"$in": query["drug_groups"]}})
@@ -273,7 +275,10 @@ def graph_constructor(uid):
 
         nx.set_edge_attributes(G, updates)
 
+
     nx.write_graphml(g, f"{_GRAPH_DIR_INTERNAL}/{query['uid']}.graphml")
+    #print(f"{_GRAPH_DIR_INTERNAL / query['uid']}.graphml")
+
     with _GRAPH_COLL_LOCK:
         _GRAPH_COLL.update_one({"uid": query["uid"]}, {"$set": {"status": "completed"}})
 
