@@ -17,7 +17,7 @@ def get_paginated_protein_protein_interactions(
     iid_evidence: list[str] = ['exp'],
     skip: int = 0,
     limit: int = 10000,
-    reviewed_proteins: list[bool] = ["True", "False"],
+    reviewed_proteins: list[bool] = None,
     skip_proteins: int = 0,
     limit_proteins: int = 250000,
     x_api_key: str = _API_KEY_HEADER_ARG,
@@ -33,12 +33,14 @@ def get_paginated_protein_protein_interactions(
         skip = 0
     if not limit:
         limit = _config["api.pagination_max"]
+    if not reviewed_proteins:
+        reviewed_proteins = [True, False]
     elif limit > _config["api.pagination_max"]:
         raise _HTTPException(status_code=422, detail=f"Limit specified ({limit}) greater than maximum limit allowed")
     
     query = {"evidenceTypes": {"$in": iid_evidence}}
-    if not ("True" in reviewed_proteins and "False" in reviewed_proteins):
-        protein_query = {"is_reviewed": {"$in": reviewed_proteins}}
+    if not (True in reviewed_proteins and False in reviewed_proteins) or skip_proteins > 0 or limit_proteins < 250000:
+        protein_query = {"is_reviewed": {"$in": [str(r) for r in reviewed_proteins]}}
     
         filtered_proteins = list({
             protein["primaryDomainId"]
