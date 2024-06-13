@@ -35,16 +35,17 @@ def get_paginated_protein_protein_interactions(
         limit = _config["api.pagination_max"]
     elif limit > _config["api.pagination_max"]:
         raise _HTTPException(status_code=422, detail=f"Limit specified ({limit}) greater than maximum limit allowed")
+    
+    query = {"evidenceTypes": {"$in": iid_evidence}}
+    if not ("True" in reviewed_proteins and "False" in reviewed_proteins):
+        protein_query = {"is_reviewed": {"$in": reviewed_proteins}}
+    
+        filtered_proteins = {
+            protein["primaryDomainId"]
+            for protein in MongoInstance.DB()["protein"].find(protein_query).skip(skip_proteins).limit(limit_proteins)
+        }
+        query.update({"memberOne": {"$in": filtered_proteins}, "memberTwo": {"$in": filtered_proteins}})
 
-    protein_query = {"is_reviewed": {"$in": reviewed_proteins}}
-
-    filtered_proteins = [
-        protein["primaryDomainId"]
-        for protein in MongoInstance.DB()["protein"].find(protein_query).skip(skip_proteins).limit(limit_proteins)
-    ]
-
-    query = {"evidenceTypes": {"$in": iid_evidence}, "memberOne": {"$in": filtered_proteins},
-             "memberTwo": {"$in": filtered_proteins}}
     coll_name = "protein_interacts_with_protein"
 
     return [
