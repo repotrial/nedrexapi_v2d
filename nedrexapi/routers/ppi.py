@@ -1,6 +1,8 @@
 from fastapi import APIRouter as _APIRouter
 from fastapi import HTTPException as _HTTPException
 from fastapi import Query as _Query
+from pydantic import BaseModel as _BaseModel
+from pydantic import Field as _Field
 
 from nedrexapi.common import _API_KEY_HEADER_ARG, check_api_key_decorator
 from nedrexapi.config import config as _config
@@ -10,41 +12,51 @@ DEFAULT_QUERY = _Query(None)
 
 router = _APIRouter()
 
+class PPIRequest(_BaseModel):
+    nodes: list[str] = _Field(None, title="Primary domain IDs of nodes",
+                              description="Primary domain IDs of the nodes the attributes are requested for")
+    iid_evidence: list[str] = _Field(['exp'], title="Evidence types",description="The evidence types to filter the PPIs by")
+    skip: int = _Field(0, title="Skip", description="The number of PPIs to skip")
+    limit: int = _Field(10000, title="Limit", description="The number of PPIs to return")
+    reviewed_proteins: list[bool] = _Field([True,False], title="Reviewed proteins", description="Whether to filter by reviewed proteins")
+    skip_proteins: int = _Field(0, title="Skip proteins", description="The number of proteins to skip")
+    limit_proteins: int = _Field(250000, title="Limit proteins", description="The number of proteins to return")
+   
+
+    class Config:
+        extra = "forbid"
+
+
+_DEFAULT_PPI_REQUEST = PPIRequest()
+
 
 @router.post("/ppi", summary="Paginated PPI query")
 @check_api_key_decorator
 def get_paginated_protein_protein_interactions(
-    iid_evidence: list[str] = ['exp'],
-    skip: int = 0,
-    limit: int = 10000,
-    reviewed_proteins: list[bool] = None,
-    skip_proteins: int = 0,
-    limit_proteins: int = 250000,
+    ppi_request: PPIRequest = _DEFAULT_PPI_REQUEST,
     x_api_key: str = _API_KEY_HEADER_ARG,
 ):
     """
     Returns an array of protein protein interactions (PPIs in a paginated manner). A skip and a limit can be
     specified, defaulting to `0` and `10_000`, respectively, if not specified.
     """
-    if not iid_evidence:
+    if not ppi_request.iid_evidence:
         return []
 
-    if not skip:
-        skip = 0
-    if not limit:
-        limit = _config["api.pagination_max"]
-    if not reviewed_proteins:
-        reviewed_proteins = [True, False]
-    elif limit > _config["api.pagination_max"]:
-        raise _HTTPException(status_code=422, detail=f"Limit specified ({limit}) greater than maximum limit allowed")
+    if not ppi_request.skip:
+        ppi_request.skip = 0
+    if not ppi_request.limit:
+        ppi_request.limit = _config["api.pagination_max"]
+    elif ppi_request.limit > _config["api.pagination_max"]:
+        raise _HTTPException(status_code=422, detail=f"Limit specified ({ppi_request.limit}) greater than maximum limit allowed")
     
-    query = {"evidenceTypes": {"$in": iid_evidence}}
-    if not (True in reviewed_proteins and False in reviewed_proteins) or skip_proteins > 0 or limit_proteins < 250000:
-        protein_query = {"is_reviewed": {"$in": [str(r) for r in reviewed_proteins]}}
+    query = {"evidenceTypes": {"$in": ppi_request.iid_evidence}}
+    if not (True in ppi_request.reviewed_proteins and False in ppi_request.reviewed_proteins) or ppi_request.skip_proteins > 0 or ppi_request.limit_proteins < 250000:
+        protein_query = {"is_reviewed": {"$in": [str(r) for r in ppi_request.reviewed_proteins]}}
     
         filtered_proteins = list({
             protein["primaryDomainId"]
-            for protein in MongoInstance.DB()["protein"].find(protein_query).sort('_id').skip(skip_proteins).limit(limit_proteins)
+            for protein in MongoInstance.DB()["protein"].find(protein_query).sort('_id').skip(ppi_request.skip_proteins).limit(ppi_request.limit_proteins)
         })
         query.update({"memberOne": {"$in": filtered_proteins}, "memberTwo": {"$in": filtered_proteins}})
 
@@ -53,5 +65,5 @@ def get_paginated_protein_protein_interactions(
     return [
         {k: v for k, v in doc.items() if k != "_id"}
         # each entry is one document -> finds all documents by conditions
-        for doc in MongoInstance.DB()[coll_name].find(query).sort('_id').skip(skip).limit(limit)
+        for doc in MongoInstance.DB()[coll_name].find(query).sort('_id').skip(ppi_request.skip).limit(ppi_request.limit)
     ]
