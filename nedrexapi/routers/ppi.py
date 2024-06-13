@@ -40,10 +40,10 @@ def get_paginated_protein_protein_interactions(
     if not ("True" in reviewed_proteins and "False" in reviewed_proteins):
         protein_query = {"is_reviewed": {"$in": reviewed_proteins}}
     
-        filtered_proteins = {
+        filtered_proteins = list({
             protein["primaryDomainId"]
             for protein in MongoInstance.DB()["protein"].find(protein_query).sort('_id').skip(skip_proteins).limit(limit_proteins)
-        }
+        })
         query.update({"memberOne": {"$in": filtered_proteins}, "memberTwo": {"$in": filtered_proteins}})
 
     coll_name = "protein_interacts_with_protein"
