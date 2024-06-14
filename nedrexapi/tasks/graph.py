@@ -72,10 +72,13 @@ def graph_constructor(uid):
             prefix = sample_doc["primaryDomainId"].split('.')[0]
             node_type_prefix_map[prefix] = coll
 
+    node_ids = set()
+
     for coll in query["nodes"]:
         node_query = {}
         if coll == "protein":
             node_query = {"taxid": {"$in": query["taxid"]}, "is_reviewed": {"$in": query["reviewed_proteins"]}}
+            logger.info(f"protein query: {node_query}")
             node_types_filtered.add("protein")
         elif coll == "drug":
             node_query = {"drugGroups": {"$in": query["drug_groups"]}}
@@ -84,15 +87,15 @@ def graph_constructor(uid):
         cursor = MongoInstance.DB()[coll].find(node_query)
         for doc in cursor:
             node_id = doc["primaryDomainId"]
-            g.add_node(node_id)
+            node_ids.add(node_id)
 
 
-    def add_edges(node_types_are_present, node1, node2, g) -> bool:
+    def add_edges(node_types_are_present, node1, node2, nodes) -> bool:
         if node_types_are_present[0]:
-            if node1 not in g:
+            if node1 not in nodes:
                 return False
         if node_types_are_present[1]:
-            if node2 not in g:
+            if node2 not in nodes:
                 return False
         return True
 
@@ -114,7 +117,7 @@ def graph_constructor(uid):
             for doc in cursor:
                 m1 = doc["memberOne"]
                 m2 = doc["memberTwo"]
-                if not add_edges(node_types_are_present, m1, m2, g):
+                if not add_edges(node_types_are_present, m1, m2, node_ids):
                     continue
                 if not query["ppi_self_loops"] and (m1 == m2):
                     continue
@@ -147,7 +150,7 @@ def graph_constructor(uid):
                 s = doc["sourceDomainId"]
                 t = doc["targetDomainId"]
 
-                if not add_edges(node_types, node_types_filtered, s, t, g):
+                if not add_edges(node_types_are_present, s, t, node_ids):
                     continue
 
                 # There is no difference in attributes between concise and non-concise.
@@ -166,7 +169,7 @@ def graph_constructor(uid):
             if ("memberOne" in doc) and ("memberTwo" in doc):
                 m1 = doc["memberOne"]
                 m2 = doc["memberTwo"]
-                if not add_edges(node_types_are_present, m1, m2, g):
+                if not add_edges(node_types_are_present, m1, m2, node_ids):
                     continue
                 if query["concise"]:
                     g.add_edge(m1, m2, reversible=True, type=doc["type"], memberOne=m1, memberTwo=m2)
@@ -193,17 +196,17 @@ def graph_constructor(uid):
             else:
                 raise Exception("Assumption about edge structure violated.")
 
-    protein_query = {"taxid": {"$not": {"$in": query["taxid"]}}}
-    if not (True in query["reviewed_proteins"] and False in query["reviewed_proteins"]):
-        protein_query.update({"is_reviewed": {"$in": [str(r) for r in query["reviewed_proteins"]]}})
+    # protein_query = {"taxid": {"$not": {"$in": query["taxid"]}}}
+    # if not (True in query["reviewed_proteins"] and False in query["reviewed_proteins"]):
+    #     protein_query.update({"is_reviewed": {"$in": [str(r) for r in query["reviewed_proteins"]]}})
 
-    cursor = MongoInstance.DB()["protein"].find(protein_query)
-    ids = [i["primaryDomainId"] for i in cursor]
-    g.remove_nodes_from(ids)
-
-    cursor = MongoInstance.DB()["drug"].find({"drugGroups": {"$not": {"$in": query["drug_groups"]}}})
-    ids = [i["primaryDomainId"] for i in cursor]
-    g.remove_nodes_from(ids)
+    # cursor = MongoInstance.DB()["protein"].find(protein_query)
+    # ids = [i["primaryDomainId"] for i in cursor]
+    # g.remove_nodes_from(ids)
+    #
+    # cursor = MongoInstance.DB()["drug"].find({"drugGroups": {"$not": {"$in": query["drug_groups"]}}})
+    # ids = [i["primaryDomainId"] for i in cursor]
+    # g.remove_nodes_from(ids)
 
     ############################################
     # ADD ATTRIBUTES
@@ -217,7 +220,8 @@ def graph_constructor(uid):
     # attributes
 
     updates = {}
-    node_ids = set(g.nodes())
+    g.add_nodes_from(node_ids)
+    node_ids = node_ids.union(set(g.nodes()))
 
     for node in NODE_COLLECTIONS:
         cursor = MongoInstance.DB()[node].find()
