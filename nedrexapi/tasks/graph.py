@@ -78,7 +78,6 @@ def graph_constructor(uid):
         node_query = {}
         if coll == "protein":
             node_query = {"taxid": {"$in": query["taxid"]}, "is_reviewed": {"$in": [str(q) for q in query["reviewed_proteins"]]}}
-            logger.info(f"protein query: {node_query}")
             node_types_filtered.add("protein")
         elif coll == "drug":
             node_query = {"drugGroups": {"$in": query["drug_groups"]}}
@@ -88,7 +87,6 @@ def graph_constructor(uid):
         for doc in cursor:
             node_id = doc["primaryDomainId"]
             node_ids.add(node_id)
-        logger.info(f"added {coll} nodes: {len(node_ids)}")
 
 
     def add_edges(node_types_are_present, node1, node2, nodes) -> bool:
@@ -115,17 +113,13 @@ def graph_constructor(uid):
 
         if coll == "protein_interacts_with_protein":
             cursor = MongoInstance.DB()[coll].find({"evidenceTypes": {"$in": query["ppi_evidence"]}})
-            edge_count = 0
-            added_count = 0
             for doc in cursor:
-                edge_count += 1
                 m1 = doc["memberOne"]
                 m2 = doc["memberTwo"]
                 if not add_edges(node_types_are_present, m1, m2, node_ids):
                     continue
                 if not query["ppi_self_loops"] and (m1 == m2):
                     continue
-                added_count += 1
                 if query["concise"]:
                     g.add_edge(
                         m1,
@@ -140,7 +134,6 @@ def graph_constructor(uid):
                     for attribute in ("_id", "created", "updated"):
                         doc.pop(attribute)
                     g.add_edge(m1, m2, reversible=True, **flatten(doc))
-            logger.info(f"added {added_count} out of {edge_count} edges")
             continue
 
         # Apply filters on gene-disorder edges.
