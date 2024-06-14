@@ -98,7 +98,7 @@ def graph_constructor(uid):
 
     for coll in query["edges"]:
         node_types = [None, None]
-        e = MongoInstance.DB()[coll].findOne()
+        e = MongoInstance.DB()[coll].find_one()
         if "memberOne" in e:
             node_types[0] = node_type_prefix_map.get(e["memberOne"].split(".")[0])
             node_types[1] = node_type_prefix_map.get(e["memberTwo"].split(".")[0])
