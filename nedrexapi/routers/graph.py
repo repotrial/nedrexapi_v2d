@@ -51,6 +51,7 @@ class BuildRequest(_BaseModel):
         description="Default: `['disorder_is_subtype_of_disorder', 'drug_has_indication', 'drug_has_target', "
         "'gene_associated_with_disorder', 'protein_encoded_by', 'protein_interacts_with_protein']`",
     )
+    protein_reviewed: list[bool] = _Field(None, title="Reviewed protein status", description="Default: `[True, False]`")
     ppi_evidence: list[str] = _Field(None, title="PPI evidence types", description="Default: `['exp']`")
     ppi_self_loops: bool = _Field(
         None, title="PPI self-loops", description="Filter on in/ex-cluding PPI self-loops (default: `False`)"
@@ -158,6 +159,8 @@ def graph_builder(
 
     if build_request.ppi_evidence is None:
         build_request.ppi_evidence = ["exp"]
+    if build_request.protein_reviewed is None:
+        build_request.protein_reviewed = [True, False]
     check_values(build_request.ppi_evidence, valid_ppi_evidence, "ppi_evidence")
 
     if build_request.ppi_self_loops is None:
@@ -172,8 +175,8 @@ def graph_builder(
     check_values(build_request.drug_groups, valid_drug_groups, "drug_groups")
 
     if build_request.reviewed_proteins is None:
-        build_request.reviewed_proteins = ["True", "False"]
-    check_values(build_request.reviewed_proteins, ["True", "False"], "reviewed_proteins")
+        build_request.reviewed_proteins = [True, False]
+    check_values(build_request.reviewed_proteins, [True, False], "reviewed_proteins")
 
     if build_request.include_omim is None:
         build_request.include_omim = True

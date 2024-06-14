@@ -155,7 +155,11 @@ def graph_constructor(uid):
             node_id = doc["primaryDomainId"]
             g.add_node(node_id, primaryDomainId=node_id)
 
-    cursor = MongoInstance.DB()["protein"].find({"taxid": {"$not": {"$in": query["taxid"]}}})
+    protein_query = {"taxid": {"$not": {"$in": query["taxid"]}}}
+    if not (True in query["reviewed_proteins"] and False in query["reviewed_proteins"]):
+        protein_query.update({"is_reviewed": {"$in": [str(r) for r in query["reviewed_proteins"]]}})
+
+    cursor = MongoInstance.DB()["protein"].find(protein_query)
     ids = [i["primaryDomainId"] for i in cursor]
     g.remove_nodes_from(ids)
 
