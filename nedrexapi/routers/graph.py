@@ -1,3 +1,4 @@
+import logging
 from uuid import uuid4 as _uuid4
 
 from fastapi import APIRouter as _APIRouter
@@ -147,6 +148,7 @@ def graph_builder(
         "withdrawn",
     ]
     valid_ppi_evidence = ["exp", "ortho", "pred"]
+    logging.info(build_request.reviewed_proteins)
 
     if build_request.nodes is None:
         build_request.nodes = DEFAULT_NODE_COLLECTIONS
