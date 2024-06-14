@@ -83,11 +83,13 @@ def graph_constructor(uid):
         elif coll == "drug":
             node_query = {"drugGroups": {"$in": query["drug_groups"]}}
             node_types_filtered.add("drug")
-
+        
         cursor = MongoInstance.DB()[coll].find(node_query)
         for doc in cursor:
             node_id = doc["primaryDomainId"]
             node_ids.add(node_id)
+            logger.info(f"adding node {node_id!r}")
+        logger.info(f"added {coll} nodes: {len(node_ids)}")
 
 
     def add_edges(node_types_are_present, node1, node2, nodes) -> bool:
@@ -118,6 +120,7 @@ def graph_constructor(uid):
                 m1 = doc["memberOne"]
                 m2 = doc["memberTwo"]
                 if not add_edges(node_types_are_present, m1, m2, node_ids):
+                    logger.info(f"skipping edge {m1!r} -> {m2!r}")
                     continue
                 if not query["ppi_self_loops"] and (m1 == m2):
                     continue
@@ -135,6 +138,7 @@ def graph_constructor(uid):
                     for attribute in ("_id", "created", "updated"):
                         doc.pop(attribute)
                     g.add_edge(m1, m2, reversible=True, **flatten(doc))
+                    logger.info(f"adding edge {m1!r} -> {m2!r}")
             continue
 
         # Apply filters on gene-disorder edges.
