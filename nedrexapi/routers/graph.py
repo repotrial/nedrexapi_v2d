@@ -51,7 +51,7 @@ class BuildRequest(_BaseModel):
         description="Default: `['disorder_is_subtype_of_disorder', 'drug_has_indication', 'drug_has_target', "
         "'gene_associated_with_disorder', 'protein_encoded_by', 'protein_interacts_with_protein']`",
     )
-    protein_reviewed: list[bool] = _Field(None, title="Reviewed protein status", description="Default: `[True, False]`")
+    reviewed_proteins: list[bool] = _Field(None, title="Reviewed protein status", description="Default: `[True, False]`")
     ppi_evidence: list[str] = _Field(None, title="PPI evidence types", description="Default: `['exp']`")
     ppi_self_loops: bool = _Field(
         None, title="PPI self-loops", description="Filter on in/ex-cluding PPI self-loops (default: `False`)"
