@@ -59,17 +59,63 @@ def graph_constructor(uid):
         logger.info(f"starting graph build job {uid!r}")
 
     g = nx.DiGraph()
+    node_types_filtered = set()  # Keep track of node types added to the graph
+
+    # Dynamically identify node types
+    node_type_prefix_map = {}
+    node_collections = query["nodes"]  # Assuming this is a list of node collection names
+
+    # Sample one entry from each node collection to determine the prefix
+    for coll in node_collections:
+        sample_doc = MongoInstance.DB()[coll].find_one()
+        if sample_doc:
+            prefix = sample_doc["primaryDomainId"].split('.')[0]
+            node_type_prefix_map[prefix] = coll
+
+    for coll in query["nodes"]:
+        node_query = {}
+        if coll == "protein":
+            node_query = {"taxid": {"$in": query["taxid"]}, "is_reviewed": {"$in": query["reviewed_proteins"]}}
+            node_types_filtered.add("protein")
+        elif coll == "drug":
+            node_query = {"drugGroups": {"$in": query["drug_groups"]}}
+            node_types_filtered.add("drug")
+
+        cursor = MongoInstance.DB()[coll].find(node_query)
+        for doc in cursor:
+            node_id = doc["primaryDomainId"]
+            g.add_node(node_id, **doc)
+
+
+    def add_edges(node_types_are_present, node1, node2, g) -> bool:
+        if node_types_are_present[0]:
+            if node1 not in g:
+                return False
+        if node_types_are_present[1]:
+            if node2 not in g:
+                return False
+        return True
 
     for coll in query["edges"]:
+        node_types = [None, None]
+        e = MongoInstance.DB()[coll].findOne()
+        if "memberOne" in e:
+            node_types[0] = node_type_prefix_map.get(e["memberOne"].split(".")[0])
+            node_types[1] = node_type_prefix_map.get(e["memberTwo"].split(".")[0])
+        elif "sourceDomainId" in e:
+            node_types[0] = node_type_prefix_map.get(e["sourceDomainId"].split(".")[0])
+            node_types[1] = node_type_prefix_map.get(e["targetDomainId"].split(".")[0])
 
+        node_types_are_present = [i in node_types_filtered for i in node_types]
         # Apply filters (if given) on PPI edges.
+
         if coll == "protein_interacts_with_protein":
             cursor = MongoInstance.DB()[coll].find({"evidenceTypes": {"$in": query["ppi_evidence"]}})
-
             for doc in cursor:
                 m1 = doc["memberOne"]
                 m2 = doc["memberTwo"]
-
+                if not add_edges(node_types_are_present, m1, m2, g):
+                    continue
                 if not query["ppi_self_loops"] and (m1 == m2):
                     continue
                 if query["concise"]:
@@ -101,6 +147,9 @@ def graph_constructor(uid):
                 s = doc["sourceDomainId"]
                 t = doc["targetDomainId"]
 
+                if not add_edges(node_types, node_types_filtered, s, t, g):
+                    continue
+
                 # There is no difference in attributes between concise and non-concise.
                 # If / else in just to show that there is no difference.
                 for attribute in ("_id", "created", "updated"):
@@ -117,6 +166,8 @@ def graph_constructor(uid):
             if ("memberOne" in doc) and ("memberTwo" in doc):
                 m1 = doc["memberOne"]
                 m2 = doc["memberTwo"]
+                if not add_edges(node_types_are_present, m1, m2, g):
+                    continue
                 if query["concise"]:
                     g.add_edge(m1, m2, reversible=True, type=doc["type"], memberOne=m1, memberTwo=m2)
                 else:
@@ -129,6 +180,9 @@ def graph_constructor(uid):
                 s = doc["sourceDomainId"]
                 t = doc["targetDomainId"]
 
+                if not add_edges(node_types_are_present, s, t, g):
+                    continue
+
                 if query["concise"]:
                     g.add_edge(s, t, reversible=False, sourceDomainId=s, targetDomainId=t, type=doc["type"])
                 else:
@@ -138,22 +192,6 @@ def graph_constructor(uid):
 
             else:
                 raise Exception("Assumption about edge structure violated.")
-
-    for coll in query["nodes"]:
-        # Apply the taxid filter to protein.
-        if coll == "protein":
-            protein_query = {"taxid": {"$in": query["taxid"]}, "is_reviewed": {"$in": query["reviewed_proteins"]}}
-            cursor = MongoInstance.DB()[coll].find(protein_query)
-
-        # Apply the drug groups filter to drugs.
-        elif coll == "drug":
-            cursor = MongoInstance.DB()[coll].find({"drugGroups": {"$in": query["drug_groups"]}})
-        else:
-            cursor = MongoInstance.DB()[coll].find()
-
-        for doc in cursor:
-            node_id = doc["primaryDomainId"]
-            g.add_node(node_id, primaryDomainId=node_id)
 
     protein_query = {"taxid": {"$not": {"$in": query["taxid"]}}}
     if not (True in query["reviewed_proteins"] and False in query["reviewed_proteins"]):
@@ -279,9 +317,8 @@ def graph_constructor(uid):
 
         nx.set_edge_attributes(G, updates)
 
-
     nx.write_graphml(g, f"{_GRAPH_DIR_INTERNAL}/{query['uid']}.graphml")
-    #print(f"{_GRAPH_DIR_INTERNAL / query['uid']}.graphml")
+    # print(f"{_GRAPH_DIR_INTERNAL / query['uid']}.graphml")
 
     with _GRAPH_COLL_LOCK:
         _GRAPH_COLL.update_one({"uid": query["uid"]}, {"$set": {"status": "completed"}})

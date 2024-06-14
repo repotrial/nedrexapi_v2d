@@ -235,7 +235,7 @@ def graph_builder(
                         "ppi_self_loops": False,
                         "taxid": [9606],
                         "drug_groups": ["approved"],
-                        "reviewed_proteins": ['True', 'False'],
+                        "reviewed_proteins": [True, False],
                         "status": "completed",
                         "uid": "d961c377-cbb3-417f-a4b0-cc1996ce6f51",
                     }
