@@ -84,7 +84,7 @@ def graph_constructor(uid):
         cursor = MongoInstance.DB()[coll].find(node_query)
         for doc in cursor:
             node_id = doc["primaryDomainId"]
-            g.add_node(node_id, primaryDomainId=node_id)
+            g.add_node(node_id)
 
 
     def add_edges(node_types_are_present, node1, node2, g) -> bool:
