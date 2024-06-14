@@ -51,7 +51,6 @@ class BuildRequest(_BaseModel):
         description="Default: `['disorder_is_subtype_of_disorder', 'drug_has_indication', 'drug_has_target', "
         "'gene_associated_with_disorder', 'protein_encoded_by', 'protein_interacts_with_protein']`",
     )
-    reviewed_proteins: list[bool] = _Field(None, title="Reviewed protein status", description="Default: `[True, False]`")
     ppi_evidence: list[str] = _Field(None, title="PPI evidence types", description="Default: `['exp']`")
     ppi_self_loops: bool = _Field(
         None, title="PPI self-loops", description="Filter on in/ex-cluding PPI self-loops (default: `False`)"
@@ -88,11 +87,11 @@ class BuildRequest(_BaseModel):
         title="Split drugs into subtypes",
         description="Replaces type on Drugs with BiotechDrug or SmallMoleculeDrug as appropriate. Default: `False`",
     )
-    reviewed_proteins: list[str] = _Field(
+    reviewed_proteins: list[bool] = _Field(
         None,
         title="Filter for reviewed/unreviewed proteins",
         description="Filter for protein database: SwissProt [True] or Trembl [False]. "
-                    "Default: ['True', 'False']",
+                    "Default: [True, False]",
     )
 
     class Config:
@@ -159,8 +158,6 @@ def graph_builder(
 
     if build_request.ppi_evidence is None:
         build_request.ppi_evidence = ["exp"]
-    if build_request.protein_reviewed is None:
-        build_request.protein_reviewed = [True, False]
     check_values(build_request.ppi_evidence, valid_ppi_evidence, "ppi_evidence")
 
     if build_request.ppi_self_loops is None:
