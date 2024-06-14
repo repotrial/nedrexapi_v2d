@@ -60,7 +60,7 @@ def graph_constructor(uid):
 
     g = nx.DiGraph()
     node_types_filtered = set()  # Keep track of node types added to the graph
-
+    logger.info(f"query: {query}")
     # Dynamically identify node types
     node_type_prefix_map = {}
     node_collections = query["nodes"]  # Assuming this is a list of node collection names
@@ -74,7 +74,7 @@ def graph_constructor(uid):
 
     node_ids = set()
 
-    for coll in query["nodes"]:
+    for coll in node_collections:
         node_query = {}
         if coll == "protein":
             node_query = {"taxid": {"$in": query["taxid"]}, "is_reviewed": {"$in": query["reviewed_proteins"]}}
