@@ -181,8 +181,7 @@ def graph_constructor(uid):
             elif ("sourceDomainId" in doc) and ("targetDomainId" in doc):
                 s = doc["sourceDomainId"]
                 t = doc["targetDomainId"]
-
-                if not add_edges(node_types_are_present, s, t, g):
+                if not add_edges(node_types_are_present, s, t, node_ids):
                     continue
 
                 if query["concise"]:
@@ -191,10 +190,8 @@ def graph_constructor(uid):
                     for attribute in ("_id", "created", "updated"):
                         doc.pop(attribute)
                     g.add_edge(s, t, reversible=False, **flatten(doc))
-
             else:
                 raise Exception("Assumption about edge structure violated.")
-
     # protein_query = {"taxid": {"$not": {"$in": query["taxid"]}}}
     # if not (True in query["reviewed_proteins"] and False in query["reviewed_proteins"]):
     #     protein_query.update({"is_reviewed": {"$in": [str(r) for r in query["reviewed_proteins"]]}})
@@ -270,7 +267,7 @@ def graph_constructor(uid):
                 for attribute in ("_id", "created", "updated"):
                     doc.pop(attribute)
                 updates[eid] = flatten(doc)
-
+    print(g)
     nx.set_node_attributes(g, updates)
 
     ############################################
