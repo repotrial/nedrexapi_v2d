@@ -10,6 +10,7 @@ from fastapi import Query as _Query
 from fastapi import Response as _Response
 from pydantic import BaseModel as _BaseModel
 from pydantic import Field as _Field
+from pydantic import root_validator
 
 from nedrexapi.common import (
     _API_KEY_HEADER_ARG,
@@ -177,34 +178,72 @@ def get_attribute_values(t: str, attribute: str, format: str, x_api_key: str = _
 
 
 class AttributeRequest(_BaseModel):
-    node_ids: list[str] = _Field(None, title="Primary domain IDs of nodes", description="Primary domain IDs of the nodes the attributes are requested for")
-    attributes: list[str] = _Field(None, title="Attributes requested", description="Attributes for which values are requested")
+    node_ids: Optional[list[str]] = _Field(None, title="Primary domain IDs of nodes", description="Primary domain IDs of the nodes the attributes are requested for")
+    target_domain_id: Optional[list[str]] = _Field(None, title="Target Domain IDs", description="Target domain IDs of the edges the attributes are requested for")
+    source_domain_id: Optional[list[str]] = _Field(None, title="Source Domain IDs", description="Source domain IDs of the edges the attributes are requested for")
+    attributes: list[str] = _Field(..., title="Attributes requested", description="Attributes for which values are requested")
 
     class Config:
         extra = "forbid"
 
+    @root_validator(pre=True)
+    def check_ids(cls, values):
+        node_ids = values.get('node_ids')
+        target_domain_id = values.get('target_domain_id')
+        source_domain_id = values.get('source_domain_id')
+        
+        if not node_ids and not (target_domain_id or source_domain_id):
+            raise ValueError('Either node_ids or at least one of target_domain_id/source_domain_id must be provided.')
+        
+        return values
+
 @router.post("/{t}/attributes/{format}", summary="Get for collection members selected attribute values")
 @check_api_key_decorator
 def get_attribute_values(t: str, format: str, ar: AttributeRequest = AttributeRequest(), x_api_key: str = _API_KEY_HEADER_ARG):
-    if t not in NODE_COLLECTIONS:
+    if t not in NODE_COLLECTIONS or t not in EDGE_COLLECTIONS:
         raise _HTTPException(
             status_code=404, detail=f"Collection {t!r} is not in the database"
         )
 
     if ar.attributes is None:
         raise _HTTPException(status_code=404, detail=f"No attribute(s) requested")
-    if ar.node_ids is None:
-        raise _HTTPException(status_code=404, detail=f"No node(s) requested")
+    if ar.node_ids is None and (ar.target_domain_id is None or ar.source_domain_id is None):
+        raise _HTTPException(status_code=404, detail=f"No node(s)/edge(s) requested")
 
-    query = {"primaryDomainId": {"$in": ar.node_ids}}
-
-    results = [
-        {
-            "primaryDomainId": i["primaryDomainId"],
-            **{attribute: i.get(attribute) for attribute in ar.attributes},
+    query = {}
+    results = []
+    if t in NODE_COLLECTIONS:
+        query = {"primaryDomainId": {"$in": ar.node_ids}}
+        results = [
+            {
+                "primaryDomainId": i["primaryDomainId"],
+                **{attribute: i.get(attribute) for attribute in ar.attributes},
+            }
+            for i in MongoInstance.DB()[t].find(query)
+        ]
+    elif t in EDGE_COLLECTIONS and ar.source_domain_id and ar.target_domain_id:
+        query = {
+            "$and": [
+                {"sourceDomainId": {"$in": ar.source_domain_id}},
+                {"targetDomainId": {"$in": ar.target_domain_id}}
+            ]
         }
-        for i in MongoInstance.DB()[t].find(query)
-    ]
+    elif t in EDGE_COLLECTIONS and ar.source_domain_id:
+        query["sourceDomainId"] = {"$in": ar.source_domain_id}
+    elif t in EDGE_COLLECTIONS and ar.target_domain_id:
+        query["targetDomainId"] = {"$in": ar.target_domain_id}
+        
+    if t in EDGE_COLLECTIONS:
+         results = [
+                {
+                    "sourceDomainId": i["sourceDomainId"],
+                    "targetDomainId": i["targetDomainId"],
+                    **{attribute: i.get(attribute) for attribute in ar.attributes},
+                }
+                for i in MongoInstance.DB()[t].find(query)
+            ]
+
+   
 
     if format == "json":
         return results
