@@ -181,8 +181,8 @@ class AttributeRequest(_BaseModel):
     target_domain_id: Optional[list[str]] = _Field(None, title="Target Domain IDs", description="Target domain IDs of the edges the attributes are requested for")
     source_domain_id: Optional[list[str]] = _Field(None, title="Source Domain IDs", description="Source domain IDs of the edges the attributes are requested for")
     attributes: list[str] = _Field(None, title="Attributes requested", description="Attributes for which values are requested")
-    skip: int = _Field(0, title="Skip", description="The number of PPIs to skip")
-    limit: int = _Field(10000, title="Limit", description="The number of PPIs to return")
+    skip: int = _Field(0, title="Skip", description="The number of entries to skip")
+    limit: int = _Field(10000, title="Limit", description="The number of entries to return")
 
     class Config:
         extra = "forbid"
