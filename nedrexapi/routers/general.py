@@ -181,6 +181,8 @@ class AttributeRequest(_BaseModel):
     target_domain_id: Optional[list[str]] = _Field(None, title="Target Domain IDs", description="Target domain IDs of the edges the attributes are requested for")
     source_domain_id: Optional[list[str]] = _Field(None, title="Source Domain IDs", description="Source domain IDs of the edges the attributes are requested for")
     attributes: list[str] = _Field(None, title="Attributes requested", description="Attributes for which values are requested")
+    skip: int = _Field(0, title="Skip", description="The number of PPIs to skip")
+    limit: int = _Field(10000, title="Limit", description="The number of PPIs to return")
 
     class Config:
         extra = "forbid"
@@ -197,6 +199,13 @@ def get_attribute_values(t: str, format: str, ar: AttributeRequest = AttributeRe
         raise _HTTPException(status_code=404, detail=f"No attribute(s) requested")
     if ar.node_ids is None and ar.target_domain_id is None and ar.source_domain_id is None:
         raise _HTTPException(status_code=404, detail=f"No node(s)/edge(s) requested")
+    if not ar.skip:
+        ar.skip = 0
+    if not ar.limit:
+        ar.limit = config["api.pagination_max"]
+    elif ar.limit > config["api.pagination_max"]:
+        raise _HTTPException(status_code=422, detail=f"Limit specified ({ar.limit}) greater than maximum limit allowed")
+    
 
     query = {}
     results = []
@@ -207,7 +216,7 @@ def get_attribute_values(t: str, format: str, ar: AttributeRequest = AttributeRe
                 "primaryDomainId": i["primaryDomainId"],
                 **{attribute: i.get(attribute) for attribute in ar.attributes},
             }
-            for i in MongoInstance.DB()[t].find(query)
+            for i in MongoInstance.DB()[t].find(query).skip(ar.skip).limit(ar.limit)
         ]
     elif t in EDGE_COLLECTIONS and ar.source_domain_id and ar.target_domain_id:
         query = {
@@ -228,7 +237,7 @@ def get_attribute_values(t: str, format: str, ar: AttributeRequest = AttributeRe
                     "targetDomainId": i["targetDomainId"],
                     **{attribute: i.get(attribute) for attribute in ar.attributes},
                 }
-                for i in MongoInstance.DB()[t].find(query)
+                for i in MongoInstance.DB()[t].find(query).skip(ar.skip).limit(ar.limit)
             ]
 
    
