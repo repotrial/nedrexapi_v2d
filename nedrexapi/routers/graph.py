@@ -92,7 +92,7 @@ class BuildRequest(_BaseModel):
         None,
         title="Filter for reviewed/unreviewed proteins",
         description="Filter for protein database: SwissProt [True] or Trembl [False]. "
-                    "Default: [True, False]",
+                    "Default: [true, galse]",
     )
 
     class Config:

@@ -82,7 +82,7 @@ def graph_constructor(uid):
         elif coll == "drug":
             node_query = {"drugGroups": {"$in": query["drug_groups"]}}
             node_types_filtered.add("drug")
-        
+
         cursor = MongoInstance.DB()[coll].find(node_query)
         for doc in cursor:
             node_id = doc["primaryDomainId"]
@@ -190,6 +190,7 @@ def graph_constructor(uid):
                     for attribute in ("_id", "created", "updated"):
                         doc.pop(attribute)
                     g.add_edge(s, t, reversible=False, **flatten(doc))
+
             else:
                 raise Exception("Assumption about edge structure violated.")
     # protein_query = {"taxid": {"$not": {"$in": query["taxid"]}}}
@@ -316,6 +317,7 @@ def graph_constructor(uid):
                 updates[(i, j)]["targetDomainId"] = j
 
         nx.set_edge_attributes(G, updates)
+
 
     nx.write_graphml(g, f"{_GRAPH_DIR_INTERNAL}/{query['uid']}.graphml")
     # print(f"{_GRAPH_DIR_INTERNAL / query['uid']}.graphml")
