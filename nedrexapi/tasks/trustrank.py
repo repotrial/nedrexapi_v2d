@@ -63,6 +63,7 @@ def run_trustrank(uid):
         "-o",
         f"{outfile}",
     ]
+    print(command)
 
     if details["only_direct_drugs"]:
         command.append("--only_direct_drugs")
