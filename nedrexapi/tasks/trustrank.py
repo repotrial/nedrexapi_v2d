@@ -43,8 +43,10 @@ def run_trustrank(uid):
         logger.info(f"starting TrustRank job {uid!r}")
 
     tmp = tempfile.NamedTemporaryFile(mode="wt")
+    print(tmp)
     for seed in details["seed_proteins"]:
         tmp.write("uniprot.{}\n".format(seed))
+        print("uniprot.{}\n".format(seed))
     tmp.flush()
 
     outfile = _TRUSTRANK_DIR / f"{uid}.txt"
