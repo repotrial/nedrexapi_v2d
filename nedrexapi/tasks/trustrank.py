@@ -61,7 +61,7 @@ def run_trustrank(uid):
         "-d",
         f"{details['damping_factor']}",
         "-o",
-        f"{outfile}",
+        f"{outfile_internal}",
     ]
     print(command)
 

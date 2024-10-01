@@ -60,5 +60,6 @@ command = " ".join(
         f"{'Y' if args.only_approved_drugs else 'N'}",
     ]
 )
-
+print(volumes)
+print(command)
 client.containers.run("djskelton/centralities:latest", command=command, volumes=volumes, auto_remove=True)
