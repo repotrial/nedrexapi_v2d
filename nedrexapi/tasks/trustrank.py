@@ -44,10 +44,8 @@ def run_trustrank(uid):
         logger.info(f"starting TrustRank job {uid!r}")
 
     tmp = tempfile.NamedTemporaryFile(mode="wt")
-    print(tmp)
     for seed in details["seed_proteins"]:
         tmp.write("uniprot.{}\n".format(seed))
-        print("uniprot.{}\n".format(seed))
     tmp.flush()
 
     outfile = _TRUSTRANK_DIR / f"{uid}.txt"
@@ -66,7 +64,6 @@ def run_trustrank(uid):
         "-o",
         f"{outfile}",
     ]
-    print(command)
 
     if details["only_direct_drugs"]:
         command.append("--only_direct_drugs")
@@ -116,7 +113,6 @@ def run_trustrank(uid):
 
     drug_ids = {i["drug_name"] for i in results["drugs"]}
     seeds = {f"uniprot.{seed}" for seed in details["seed_proteins"]}
-    print(f"Ranking file destination: {ranking_file}")
     g = nx.read_graphml(ranking_file_internal)
     for edge in product(drug_ids, seeds):
         if g.has_edge(*edge):
