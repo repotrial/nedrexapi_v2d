@@ -115,7 +115,7 @@ def run_trustrank(uid):
 
     drug_ids = {i["drug_name"] for i in results["drugs"]}
     seeds = {f"uniprot.{seed}" for seed in details["seed_proteins"]}
-
+    print(f"Ranking file destination: {ranking_file}")
     g = nx.read_graphml(ranking_file)
     for edge in product(drug_ids, seeds):
         if g.has_edge(*edge):
