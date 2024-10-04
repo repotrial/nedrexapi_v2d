@@ -10,7 +10,7 @@ import networkx as nx  # type: ignore
 from nedrexapi.common import (
     _TRUSTRANK_COLL,
     _TRUSTRANK_COLL_LOCK,
-    _TRUSTRANK_DIR_INTERNAL,
+    _TRUSTRANK_DIR,
     _TRUSTRANK_SUFFIX,
     _STATIC_DIR,
     _STATIC_DIR_INTERNAL,
@@ -48,7 +48,7 @@ def run_trustrank(uid):
         tmp.write("uniprot.{}\n".format(seed))
     tmp.flush()
 
-    outfile = _TRUSTRANK_DIR_INTERNAL / f"{uid}.txt"
+    outfile = _TRUSTRANK_DIR / f"{uid}.txt"
     outfile_internal = _DATA_DIR_INTERNAL / _TRUSTRANK_SUFFIX / f"{uid}.txt"
 
     command = [
