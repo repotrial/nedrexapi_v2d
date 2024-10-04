@@ -53,7 +53,7 @@ def run_trustrank(uid):
 
     command = [
         f"{config['api.directories.scripts']}/run_trustrank.py",
-        "-e", _STATIC_DIR_INTERNAL,
+        "-e", _STATIC_DIR,
         "-i", _STATIC_DIR_INTERNAL,
         "-n",
         ranking_file,
