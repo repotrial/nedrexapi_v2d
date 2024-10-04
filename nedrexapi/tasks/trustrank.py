@@ -10,7 +10,7 @@ import networkx as nx  # type: ignore
 from nedrexapi.common import (
     _TRUSTRANK_COLL,
     _TRUSTRANK_COLL_LOCK,
-    _TRUSTRANK_DIR_INTERNAL,
+    _TRUSTRANK_DIR,
     _TRUSTRANK_SUFFIX,
     _STATIC_DIR,
     _STATIC_DIR_INTERNAL,
@@ -48,12 +48,12 @@ def run_trustrank(uid):
         tmp.write("uniprot.{}\n".format(seed))
     tmp.flush()
 
-    outfile = _TRUSTRANK_DIR_INTERNAL / f"{uid}.txt"
+    outfile = _TRUSTRANK_DIR / f"{uid}.txt"
     outfile_internal = _DATA_DIR_INTERNAL / _TRUSTRANK_SUFFIX / f"{uid}.txt"
 
     command = [
         f"{config['api.directories.scripts']}/run_trustrank.py",
-        "-e", _STATIC_DIR_INTERNAL,
+        "-e", _STATIC_DIR,
         "-i", _STATIC_DIR_INTERNAL,
         "-n",
         ranking_file,
@@ -62,9 +62,8 @@ def run_trustrank(uid):
         "-d",
         f"{details['damping_factor']}",
         "-o",
-        f"{outfile_internal}",
+        f"{outfile}",
     ]
-    print(command)
 
     if details["only_direct_drugs"]:
         command.append("--only_direct_drugs")
