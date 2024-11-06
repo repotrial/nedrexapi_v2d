@@ -21,6 +21,7 @@ class PPIRequest(_BaseModel):
     reviewed_proteins: list[bool] = _Field([True,False], title="Reviewed proteins", description="Whether to filter by reviewed proteins")
     skip_proteins: int = _Field(0, title="Skip proteins", description="The number of proteins to skip")
     limit_proteins: int = _Field(250000, title="Limit proteins", description="The number of proteins to return")
+    sources: list[str] = _Field([], title="Sources",description="The sources to filter the PPIs by; if the list is empty, all sources will be considered")
    
 
     class Config:
@@ -60,6 +61,9 @@ def get_paginated_protein_protein_interactions(
         })
         query.update({"memberOne": {"$in": filtered_proteins}, "memberTwo": {"$in": filtered_proteins}})
 
+    if ppi_request.sources and len(ppi_request.sources)>0:
+        query["dataSources"] = {"$in": ppi_request.sources}
+        
     coll_name = "protein_interacts_with_protein"
 
     return [
