@@ -22,6 +22,8 @@ class PPIRequest(_BaseModel):
     skip_proteins: int = _Field(0, title="Skip proteins", description="The number of proteins to skip")
     limit_proteins: int = _Field(250000, title="Limit proteins", description="The number of proteins to return")
     sources: list[str] = _Field([], title="Sources",description="The sources to filter the PPIs by; if the list is empty, all sources will be considered")
+    num_sources: int = _Field(1, title="Minimum Source Count", description="Minimum number of sources required in dataSources for a PPI")
+
    
 
     class Config:
@@ -63,6 +65,9 @@ def get_paginated_protein_protein_interactions(
 
     if ppi_request.sources and len(ppi_request.sources)>0:
         query["dataSources"] = {"$in": ppi_request.sources}
+        
+    if ppi_request.num_sources > 1:
+        query["$expr"] = {"$gte": [{"$size": "$dataSources"}, ppi_request.num_sources]}
         
     coll_name = "protein_interacts_with_protein"
 
