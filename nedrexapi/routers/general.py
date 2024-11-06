@@ -29,6 +29,16 @@ DEFAULT_QUERY = _Query(None)
 @router.get(
     "/pagination_max",
     summary="Pagination limit",
+    responses={
+        200: {
+            "description": "Returns the pagination maximum for the API",
+            "content": {
+                "application/json": {
+                    "example": config["api.pagination_max"]  # Use the current config value as the example
+                }
+            }
+        }
+    },
 )
 @check_api_key_decorator
 def pagination_maximum(x_api_key: str = _API_KEY_HEADER_ARG):
@@ -47,7 +57,7 @@ def api_key_setting():
 
 @router.get(
     "/list_node_collections",
-    responses={200: {"content": {"application/json": {"example": ["disorder", "drug", "gene", "pathway", "protein"]}}}},
+    responses={200: {"content": {"application/json": {"example": NODE_COLLECTIONS}}}},
     summary="List node collections",
 )
 @check_api_key_decorator
@@ -91,17 +101,7 @@ def list_edge_collections(x_api_key: str = _API_KEY_HEADER_ARG):
         200: {
             "content": {
                 "application/json": {
-                    "example": [
-                        "synonyms",
-                        "domainIds",
-                        "primaryDomainId",
-                        "type",
-                        "displayName",
-                        "comments",
-                        "taxid",
-                        "sequence",
-                        "geneName",
-                    ]
+                    "example": EDGE_COLLECTIONS
                 }
             }
         },
