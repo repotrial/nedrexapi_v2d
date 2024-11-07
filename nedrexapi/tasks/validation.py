@@ -138,6 +138,8 @@ def module_validation(uid: str):
             "Y" if details["only_approved_drugs"] else "N",
             outfile.name,
         ]
+        with open("/tmp/command.txt", "w") as f:
+            f.write(" ".join(command))
         print(command)
         p = subprocess.Popen(command, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
         _, stderr = p.communicate()
