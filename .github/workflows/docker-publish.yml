@@ -42,9 +42,9 @@ jobs:
       # prevent caching
       - name: Force clean submodule update
         run: |
-          git submodule foreach --recursive git clean -ffdx
-          git submodule foreach --recursive git reset --hard
-          git submodule update --init --recursive --force
+          git submodule sync --recursive
+          git submodule foreach --recursive git fetch --all
+          git submodule foreach --recursive git checkout origin/master
           
       - name: Setup QEMU
         uses: docker/setup-qemu-action@v2.1.0
