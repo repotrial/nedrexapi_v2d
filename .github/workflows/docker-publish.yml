@@ -39,6 +39,12 @@ jobs:
         with:
           submodules: 'recursive'
           token: ${{ secrets.GH_TOKEN }}
+      # prevent caching
+      - name: Force clean submodule update
+        run: |
+          git submodule foreach --recursive git clean -ffdx
+          git submodule foreach --recursive git reset --hard
+          git submodule update --init --recursive --force
           
       - name: Setup QEMU
         uses: docker/setup-qemu-action@v2.1.0
