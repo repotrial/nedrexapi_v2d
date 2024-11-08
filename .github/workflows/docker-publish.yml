@@ -44,7 +44,7 @@ jobs:
         run: |
           git submodule sync --recursive
           git submodule foreach --recursive git fetch --all
-          git submodule foreach --recursive git checkout origin/master
+          git submodule update --remote --recursive --force
           
       - name: Setup QEMU
         uses: docker/setup-qemu-action@v2.1.0
