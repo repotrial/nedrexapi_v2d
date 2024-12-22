@@ -229,7 +229,7 @@ def graph_builder(
                             "gene_associated_with_disorder",
                             "is_isoform_of",
                             "molecule_similarity_molecule",
-                            "protein_encoded_by",
+                            "protein_encoded_by_gene",
                             "protein_in_pathway",
                             "protein_interacts_with_protein",
                         ],
