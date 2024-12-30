@@ -41,7 +41,7 @@ RUN chmod 777 -R /opt/conda
 FROM nedrexapi_base
 RUN apt-get update && apt-get upgrade -y && apt-get autoclean -y && apt-get autoremove -y && apt-get clean -y
 
-RUN mamba upgrade pip requests cryptography pyopenssl
+RUN mamba update pip requests cryptography pyopenssl
 RUN mamba install -c conda-forge graph-tool poetry
 
 WORKDIR /app/nedrexapi
