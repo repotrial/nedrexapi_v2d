@@ -1,22 +1,18 @@
-from uuid import uuid4 as _uuid4
-
 from fastapi import APIRouter as _APIRouter
-from fastapi import BackgroundTasks as _BackgroundTasks
 from fastapi import HTTPException as _HTTPException
 from fastapi import Response as _Response
 from pydantic import BaseModel as _BaseModel
 from pydantic import Field as _Field
-from nedrexapi.routers import neo4j as _neo4j
 from langchain_community.graphs import Neo4jGraph
 import json
 
 from nedrexapi.common import (
     _API_KEY_HEADER_ARG,
-    _TRUSTRANK_COLL,
-    _TRUSTRANK_COLL_LOCK,
-    _TRUSTRANK_SUFFIX,
-    _DATA_DIR_INTERNAL,
     check_api_key_decorator,
+)
+
+from nedrexapi.llm import (
+_LLM_BASE, _LLM_model, _LLM_path
 )
 
 from nedrexapi.config import config as _config
@@ -24,8 +20,6 @@ from nedrexapi.config import config as _config
 _NEO4J_PORT = _config[f'db.{_config["api.status"]}.neo4j_bolt_port_internal']
 _NEO4J_HOST = _config[f'db.{_config["api.status"]}.neo4j_name']
 _NEO4J_DRIVER = Neo4jGraph(f"bolt://{_NEO4J_HOST}:{_NEO4J_PORT}", username="", password="", database='neo4j')
-
-from nedrexapi.tasks import queue_and_wait_for_job
 
 router = _APIRouter()
 
@@ -63,7 +57,7 @@ def available_collections(x_api_key: str = _API_KEY_HEADER_ARG):
     Returns a list of available collections in the knowledge graph where embeddings are available.
     """
     result = get_available_collections()
-    return json.dumps({"availableCollections": result.keys()}) + "\n"
+    return _Response(json.dumps([n for n in result.keys()]))
 
 def get_properties(type):
     query = f"MATCH (n: {type}) RETURN PROPERTIES(n) AS props LIMIT 1"
@@ -88,9 +82,9 @@ def create_embedding_cypher_query(query, type, top):
 
     cypher = """CALL apoc.ml.openai.embedding(['"""+query+"""'], "no-key", 
         {
-            endpoint: "https://llm.cosy.bio/v1",
-            path: 'embeddings',
-            model: "snowflake-arctic-embed2:latest"
+            endpoint: '"""+_LLM_BASE+"""',
+            path: '"""+_LLM_path+"""',
+            model: '"""+_LLM_model+"""'
         }) yield index, embedding
 
     CALL db.index.vector.queryNodes('"""+collection['index_name']+"""', """+str(top)+""", embedding) YIELD node AS n, score
@@ -126,7 +120,6 @@ def query_all_embeddings(query, top):
     return top_hits
 
 
-
 @router.post("/query")
 @check_api_key_decorator
 def query_embeddings(request: QueryEmbeddingRequest = DEFAULT_QUERY_EMBEDDING_REQUEST):
@@ -136,5 +129,7 @@ def query_embeddings(request: QueryEmbeddingRequest = DEFAULT_QUERY_EMBEDDING_RE
         results = query_all_embeddings(request.query, top)
     else:
         results = query_single_embedding(request.query, type, top)
+    return _Response(to_json(results))
 
-    return to_json(results)
+
+
