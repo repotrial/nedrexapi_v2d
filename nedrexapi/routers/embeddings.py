@@ -62,7 +62,10 @@ def available_collections(x_api_key: str = _API_KEY_HEADER_ARG):
 def get_properties(type):
     query = f"MATCH (n: {type}) RETURN PROPERTIES(n) AS props LIMIT 1"
     result = run_neo4j_query(query)
-    return {k for k,v in result[0]["props"].items()}
+    try:
+        return {k for k,v in result[0]["props"].items()}
+    except IndexError:
+        return set()
 
 
 def create_embedding_cypher_query(query, type, top):
@@ -79,14 +82,13 @@ def create_embedding_cypher_query(query, type, top):
     if len(property_string) > 0:
         property_string = property_string[:-1]+";"
 
-
+    # TODO do the same of edges (right now the edge calling fails)
     cypher = """CALL apoc.ml.openai.embedding(['"""+query+"""'], "no-key", 
         {
             endpoint: '"""+_LLM_BASE+"""',
             path: '"""+_LLM_path+"""',
             model: '"""+_LLM_model+"""'
         }) yield index, embedding
-
     CALL db.index.vector.queryNodes('"""+collection['index_name']+"""', """+str(top)+""", embedding) YIELD node AS n, score
     RETURN score, """+property_string
 
@@ -106,10 +108,14 @@ def query_all_embeddings(query, top):
     results = dict()
     scores = dict()
     for type in collections.keys():
-        best_hits = get_query_hits(query, type, top)
-        for hit in best_hits:
-            results[hit["n.primaryDomainId"]] = hit
-            scores[hit["n.primaryDomainId"]] = hit["score"]
+        try:
+            best_hits = get_query_hits(query, type, top)
+            for hit in best_hits:
+                results[hit["n.primaryDomainId"]] = hit
+                scores[hit["n.primaryDomainId"]] = hit["score"]
+        except Exception as e:
+            print(f"Error while getting hits for {type}")
+            print(e)
 
     scores_sorted = sorted(scores.items(), key=lambda x: x[1], reverse=True)
     top_hits = []
