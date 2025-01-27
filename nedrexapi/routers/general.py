@@ -466,26 +466,34 @@ def get_by_id(collection: str, q: str, x_api_key: str = _API_KEY_HEADER_ARG):
 
     return [{k: v for k, v in i.items() if k != "_id"} for i in result]
 
-@router.post("/find_by_ids/{collection}", summary="Find by IDs")
+
+class IDRequest(_BaseModel):
+    collection_name: str
+    id_list: list[str]
+
+
+@router.post("/find_by_ids/", summary="Find by IDs")
 @check_api_key_decorator
-def find_by_ids(collection_name: str, id_list: list[str],
-                         x_api_key: str = _API_KEY_HEADER_ARG):
+def find_by_ids(idr: IDRequest, x_api_key: str = _API_KEY_HEADER_ARG):
     """
-    Returns a list of items with the specified IDs from the given collection.
-    The ID list contains query IDs in the form `{database}.{accession}`, for example `uniprot.Q9UBT6`.
+    Returns a list of items with the specified IDs from the given collection (specified via 'collection_name').
+    The ID list 'id_list' contains query IDs in the form `{database}.{accession}`, for example `uniprot.Q9UBT6`.
     Note that the query IDs can be a combination of (1) primary domain IDs and (2) any other domain IDs used to refer
     to an entity (e.g., `mondo.0020066` and `ncit.C92622` in the above example).
     """
+    collection_name = idr.collection_name
+    ids = idr.id_list
 
     if collection_name not in NODE_COLLECTIONS:
         raise _HTTPException(status_code=404, detail=f"Collection {collection_name!r} is not in the database")
 
-    if not isinstance(id_list, list):
+    if not isinstance(ids, list):
         raise _HTTPException(status_code=400, detail=f"Given id_list is not a list!")
 
-    result = MongoInstance.DB()[collection_name].find({"domainIds": {"$in": [id_list]}})
-    return id_list
-    #return [{k: v for k, v in i.items() if k != "_id"} for i in result]
+    result = MongoInstance.DB()[collection_name].find({"domainIds": {"$in": ids}})
+
+    return [{k: v for k, v in i.items() if k != "_id"} for i in result]
+
 
 @router.get(
     "/id_map/{collection}",
