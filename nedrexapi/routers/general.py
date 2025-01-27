@@ -22,7 +22,6 @@ from nedrexapi.db import MongoInstance
 
 router = _APIRouter()
 
-
 DEFAULT_QUERY = _Query(None)
 
 
@@ -48,18 +47,18 @@ def api_key_setting():
 @router.get(
     "/list_node_collections",
     responses={200: {"content": {"application/json": {"example": [
-    "disorder",
-    "drug",
-    "gene",
-    "genomic_variant",
-    "go",
-    "pathway",
-    "phenotype",
-    "protein",
-    "side_effect",
-    "signature",
-    "tissue"
-]}}}},
+        "disorder",
+        "drug",
+        "gene",
+        "genomic_variant",
+        "go",
+        "pathway",
+        "phenotype",
+        "protein",
+        "side_effect",
+        "signature",
+        "tissue"
+    ]}}}},
     summary="List node collections",
 )
 @check_api_key_decorator
@@ -74,25 +73,25 @@ def list_node_collections(x_api_key: str = _API_KEY_HEADER_ARG):
             "content": {
                 "application/json": {
                     "example": [
-    "disorder_has_phenotype",
-    "disorder_is_subtype_of_disorder",
-    "drug_has_contraindication",
-    "drug_has_indication",
-    "drug_has_side_effect",
-    "drug_has_target",
-    "gene_associated_with_disorder",
-    "gene_expressed_in_tissue",
-    "go_is_subtype_of_go",
-    "protein_encoded_by_gene",
-    "protein_expressed_in_tissue",
-    "protein_has_go_annotation",
-    "protein_has_signature",
-    "protein_in_pathway",
-    "protein_interacts_with_protein",
-    "side_effect_same_as_phenotype",
-    "variant_affects_gene",
-    "variant_associated_with_disorder"
-]
+                        "disorder_has_phenotype",
+                        "disorder_is_subtype_of_disorder",
+                        "drug_has_contraindication",
+                        "drug_has_indication",
+                        "drug_has_side_effect",
+                        "drug_has_target",
+                        "gene_associated_with_disorder",
+                        "gene_expressed_in_tissue",
+                        "go_is_subtype_of_go",
+                        "protein_encoded_by_gene",
+                        "protein_expressed_in_tissue",
+                        "protein_has_go_annotation",
+                        "protein_has_signature",
+                        "protein_in_pathway",
+                        "protein_interacts_with_protein",
+                        "side_effect_same_as_phenotype",
+                        "variant_affects_gene",
+                        "variant_associated_with_disorder"
+                    ]
                 }
             }
         }
@@ -162,7 +161,8 @@ def list_attributes(collection_name: str, include_counts: bool = False, x_api_ke
 def get_attribute_values(collection_name: str, attribute: str, format: str, x_api_key: str = _API_KEY_HEADER_ARG):
     if collection_name in NODE_COLLECTIONS:
         results = [
-            {"primaryDomainId": i["primaryDomainId"], attribute: i.get(attribute)} for i in MongoInstance.DB()[collection_name].find()
+            {"primaryDomainId": i["primaryDomainId"], attribute: i.get(attribute)} for i in
+            MongoInstance.DB()[collection_name].find()
         ]
     elif collection_name in EDGE_COLLECTIONS:
         try:
@@ -195,15 +195,19 @@ def get_attribute_values(collection_name: str, attribute: str, format: str, x_ap
 
 
 class AttributeRequest(_BaseModel):
-    node_ids: list[str] = _Field(None, title="Primary domain IDs of nodes", description="Primary domain IDs of the nodes the attributes are requested for")
-    attributes: list[str] = _Field(None, title="Attributes requested", description="Attributes for which values are requested")
+    node_ids: list[str] = _Field(None, title="Primary domain IDs of nodes",
+                                 description="Primary domain IDs of the nodes the attributes are requested for")
+    attributes: list[str] = _Field(None, title="Attributes requested",
+                                   description="Attributes for which values are requested")
 
     class Config:
         extra = "forbid"
 
+
 @router.post("/{collection_name}/attributes/{format}", summary="Get for collection members selected attribute values")
 @check_api_key_decorator
-def get_attribute_values(collection_name: str, format: str, ar: AttributeRequest = AttributeRequest(), x_api_key: str = _API_KEY_HEADER_ARG):
+def get_attribute_values(collection_name: str, format: str, ar: AttributeRequest = AttributeRequest(),
+                         x_api_key: str = _API_KEY_HEADER_ARG):
     if collection_name not in NODE_COLLECTIONS:
         raise _HTTPException(
             status_code=404, detail=f"Collection {collection_name!r} is not in the database"
@@ -275,32 +279,34 @@ def get_attribute_values(collection_name: str, format: str, ar: AttributeRequest
     #     dict_writer.writerows(results)
     #     return _Response(content=string.getvalue(), media_type="plain/text")
 
+
 @router.get("/{collection_name}/attributes/{format}", summary="Get collection member attribute values")
 @check_api_key_decorator
 def get_node_attribute_values(
-    collection_name: str,
-    format: str,
-    attributes: list[str] = _Query(
-        None,
-        description=(
-            "Attribute(s) requested. "
-            "Multiple attributes can be specified (e.g., `attribute=domainIds&attribute=primaryDomainId)`"
+        collection_name: str,
+        format: str,
+        attributes: list[str] = _Query(
+            None,
+            description=(
+                    "Attribute(s) requested. "
+                    "Multiple attributes can be specified (e.g., `attribute=domainIds&attribute=primaryDomainId)`"
+            ),
+            alias="attribute",
         ),
-        alias="attribute",
-    ),
-    node_ids: list[str] = _Query(
-        None,
-        description=(
-            "Node IDs to collect attribute values for. "
-            "Multiple node IDs can be specified (e.g., `node_id=<id_1>&node_id=<id_2>`)"
+        node_ids: list[str] = _Query(
+            None,
+            description=(
+                    "Node IDs to collect attribute values for. "
+                    "Multiple node IDs can be specified (e.g., `node_id=<id_1>&node_id=<id_2>`)"
+            ),
+            alias="node_id",
         ),
-        alias="node_id",
-    ),
-    offset: Optional[int] = _Query(None, description="Offset to use"),
-    limit: Optional[int] = _Query(
-        None, description=f"Limit number of queries returned (default & maximum is {config['api.pagination_max']:,})"
-    ),
-    x_api_key: str = _API_KEY_HEADER_ARG,
+        offset: Optional[int] = _Query(None, description="Offset to use"),
+        limit: Optional[int] = _Query(
+            None,
+            description=f"Limit number of queries returned (default & maximum is {config['api.pagination_max']:,})"
+        ),
+        x_api_key: str = _API_KEY_HEADER_ARG,
 ):
     # Singular is used for arguments because this makes sense to a user.
     # Aliasing to plural here as node_id and attribute are actually lists of 1+ strings.
@@ -392,7 +398,8 @@ def collection_details(collection: str, x_api_key: str = _API_KEY_HEADER_ARG):
 )
 @_cached(cache=_LRUCache(maxsize=32))
 @check_api_key_decorator
-def list_all_collection_items(collection: str, offset: int = None, limit: int = None, x_api_key: str = _API_KEY_HEADER_ARG):
+def list_all_collection_items(collection: str, offset: int = None, limit: int = None,
+                              x_api_key: str = _API_KEY_HEADER_ARG):
     """
     Returns an array of all items in the collection `collection`.
     Items are returned as JSON, and have all of their attributes (and corresponding values).
@@ -421,25 +428,64 @@ def get_primary_id(supplied_id, coll):
         return [i["primaryDomainId"] for i in result]
 
 
-@router.get("/get_by_id/{collection}", summary="Get by ID")
-@check_api_key_decorator
-def get_by_id(collection: str, q: list[str] = DEFAULT_QUERY, x_api_key: str = _API_KEY_HEADER_ARG):
-    """
-    Returns an array of items with one or more of the specified query IDs, `q`, from a collection, `collection`.
-    The query IDs are of the form `{database}.{accession}`, for example `uniprot.Q9UBT6`.
-    Note that the query IDs can be a combination of (1) primary domain ID and (2) any other domain ID used to refer
-    to an entity (e.g., `mondo.0020066` and `ncit.C92622` in the above example).
-    """
-    if not q:
-        return []
+# @router.get("/get_by_id/{collection}", summary="Get by ID")
+# @check_api_key_decorator
+# def get_by_id(collection: str, q: list[str] = DEFAULT_QUERY, x_api_key: str = _API_KEY_HEADER_ARG):
+#    """
+#    Returns an array of items with one or more of the specified query IDs, `q`, from a collection, `collection`.
+#    The query IDs are of the form `{database}.{accession}`, for example `uniprot.Q9UBT6`.
+#    Note that the query IDs can be a combination of (1) primary domain ID and (2) any other domain ID used to refer
+#    to an entity (e.g., `mondo.0020066` and `ncit.C92622` in the above example).
+#    """
+#    if not q:
+#        return []
 
+#    if collection not in NODE_COLLECTIONS:
+#        raise _HTTPException(status_code=404, detail=f"Collection {collection!r} is not in the database")
+
+#    result = MongoInstance.DB()[collection].find({"domainIds": {"$in": q}})
+#    result = [{k: v for k, v in i.items() if not k == "_id"} for i in result]
+#    return result
+
+@router.get("/get_by_id/{collection}/{q}", summary="Get by ID")
+@check_api_key_decorator
+def get_by_id(collection: str, q: str, x_api_key: str = _API_KEY_HEADER_ARG):
+    """
+    Returns an item with the specified query ID, `q`, from a collection, `collection`.
+    The query ID is of the form `{database}.{accession}`, for example `uniprot.Q9UBT6`.
+    Note that the query ID can be a combination of (1) primary domain ID and (2) any other domain ID used to refer
+    to an entity (e.g., `mondo.0020066` and `ncit.C92622` in the above example).
+    To get a list of available collections, insert `-` as query ID `q`.
+    """
+    if q == "-":
+        return ["No q given. Returning available Node Collections", NODE_COLLECTIONS]
     if collection not in NODE_COLLECTIONS:
         raise _HTTPException(status_code=404, detail=f"Collection {collection!r} is not in the database")
 
-    result = MongoInstance.DB()[collection].find({"domainIds": {"$in": q}})
-    result = [{k: v for k, v in i.items() if not k == "_id"} for i in result]
-    return result
+    result = MongoInstance.DB()[collection].find({"domainIds": {"$in": [q]}})
 
+    return [{k: v for k, v in i.items() if k != "_id"} for i in result]
+
+@router.post("/find_by_ids/{collection}", summary="Find by IDs")
+@check_api_key_decorator
+def find_by_ids(collection_name: str, id_list: list[str],
+                         x_api_key: str = _API_KEY_HEADER_ARG):
+    """
+    Returns a list of items with the specified IDs from the given collection.
+    The ID list contains query IDs in the form `{database}.{accession}`, for example `uniprot.Q9UBT6`.
+    Note that the query IDs can be a combination of (1) primary domain IDs and (2) any other domain IDs used to refer
+    to an entity (e.g., `mondo.0020066` and `ncit.C92622` in the above example).
+    """
+
+    if collection_name not in NODE_COLLECTIONS:
+        raise _HTTPException(status_code=404, detail=f"Collection {collection_name!r} is not in the database")
+
+    if not isinstance(id_list, list):
+        raise _HTTPException(status_code=400, detail=f"Given id_list is not a list!")
+
+    result = MongoInstance.DB()[collection_name].find({"domainIds": {"$in": [id_list]}})
+    return id_list
+    #return [{k: v for k, v in i.items() if k != "_id"} for i in result]
 
 @router.get(
     "/id_map/{collection}",
