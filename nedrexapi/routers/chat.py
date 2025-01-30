@@ -37,7 +37,7 @@ def get_explain_match_query(id, type):
         raise _HTTPException(status_code=404, detail=f"Collection {type} not available or ready.")
     collection = collections[type]
     from nedrexapi.routers.embeddings import get_properties
-    properties = get_properties(type)
+    properties = get_properties(type, collection["entityType"])
     property_string = ""
     for property in properties:
         if property not in collection["properties"]:
@@ -68,6 +68,6 @@ def ask_kb(request:QuestionRequest=DEFAULT_QUESTION_REQUEST):
     print(results)
     messages = [("system",
                  "You are a system that helps explaining results from a knowledge graph stored in the NeDRex database. Please call it NeDRex or 'the NeDRex knowledge graph' and not 'the knowledge graph' NeDRex contains molecular biological entities and relationships and you can identify the type by the type attribute. You will be handed multiple neo4j entries and the question the user asked. The entries will be the closest matches that could be found in the database regarding the query. It's score is the cosine similarity of the query and entries in embedding space. Please factor especially in the type of each of the top 10 entries that is given and provide a detailed answer based on the users question! Also base your answer exclusively on the provided top matching entries and also explain these entries, especially in regards to their likelihood of being a valid answer to their question! First formulate a detailed answer to the question based on the given entries and afterwards make sure to add a ranked list of the entries with the respective displayName/label, primaryDomainId (e.g. mondo, drugbank, ...), and the score so the user can also get the results from NeDRexDB. You are allowed to convert the score, that is a long decimal into a percentage number and cut the decimal points.")]
-    human_message = f"I have the following question: {query}?\n Here are the best matches from the NeDRex knowledge graph:\n{results}"
+    human_message = f"I have the following question: {query}?\n Here are the best matches from the NeDRex knowledge graph:\n{results}\n\nPlease answer in detail based on the provided information from NeDRex and your general instructions: {query}?"
     messages.append(("human",human_message))
     return _Response(chat(messages).content)
