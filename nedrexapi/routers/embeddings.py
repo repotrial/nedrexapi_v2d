@@ -132,11 +132,13 @@ def query_all_embeddings(query, top):
             if collections[type]["entityType"] == "NODE":
                 best_hits = get_query_hits(embedding, type, top)
                 for hit in best_hits:
+                    del hit["embedding"]
                     results[hit["n.primaryDomainId"]] = hit
                     scores[hit["n.primaryDomainId"]] = hit["score"]
             else:
                 best_hits = get_query_hits(embedding, type, top)
                 for hit in best_hits:
+                    del hit["embedding"]
                     results[hit["primaryDomainIds"]] = hit
                     scores[hit["primaryDomainIds"]] = hit["score"]
 
