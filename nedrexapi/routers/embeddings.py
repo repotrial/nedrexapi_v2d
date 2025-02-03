@@ -141,6 +141,17 @@ def query_all_embeddings(query, top):
                 for hit in best_hits:
                     if "embedding" in hit.keys():
                         del hit["embedding"]
+                    if "s" in hit.keys():
+                        s = hit["s"]
+                        if "embedding" in s.keys():
+                            del s["embedding"]
+                        del hit["s"]
+                        hit["source"]=s
+                    if "t" in hit.keys():
+                        t = hit["t"]
+                        if "embedding" in t.keys():
+                            del t["embedding"]
+                        hit["target"]=t
                     results[hit["primaryDomainIds"]] = hit
                     scores[hit["primaryDomainIds"]] = hit["score"]
 
