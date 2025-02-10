@@ -20,7 +20,8 @@ _STATIC_DIR = _Path(_config["api.directories.static"])
 @check_api_key_decorator
 def get_metadata(x_api_key: str = _API_KEY_HEADER_ARG):
     doc = MongoInstance.DB()["metadata"].find_one({})
-    doc.pop("_id")
+    if "_id" in doc.keys():
+        doc.pop("_id")
     return doc
 
 
