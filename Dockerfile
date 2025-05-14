@@ -42,7 +42,7 @@ FROM nedrexapi_base
 RUN apt-get update && apt-get upgrade -y && apt-get autoclean -y && apt-get autoremove -y && apt-get clean -y
 
 RUN mamba update pip requests cryptography pyopenssl
-RUN mamba install -c conda-forge graph-tool poetry
+RUN mamba install -c conda-forge graph-tool==2.97 poetry
 
 WORKDIR /app/nedrexapi
 
