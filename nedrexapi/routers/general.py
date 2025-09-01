@@ -28,6 +28,16 @@ DEFAULT_QUERY = _Query(None)
 @router.get(
     "/pagination_max",
     summary="Pagination limit",
+    responses={
+        200: {
+            "description": "Returns the pagination maximum for the API",
+            "content": {
+                "application/json": {
+                    "example": config["api.pagination_max"]  # Use the current config value as the example
+                }
+            }
+        }
+    },
 )
 @check_api_key_decorator
 def pagination_maximum(x_api_key: str = _API_KEY_HEADER_ARG):
@@ -46,19 +56,7 @@ def api_key_setting():
 
 @router.get(
     "/list_node_collections",
-    responses={200: {"content": {"application/json": {"example": [
-        "disorder",
-        "drug",
-        "gene",
-        "genomic_variant",
-        "go",
-        "pathway",
-        "phenotype",
-        "protein",
-        "side_effect",
-        "signature",
-        "tissue"
-    ]}}}},
+    responses={200: {"content": {"application/json": {"example": NODE_COLLECTIONS}}}},
     summary="List node collections",
 )
 @check_api_key_decorator
@@ -109,16 +107,7 @@ def list_edge_collections(x_api_key: str = _API_KEY_HEADER_ARG):
         200: {
             "content": {
                 "application/json": {
-                    "example": [
-                        "domainIds",
-                        "primaryDomainId",
-                        "type",
-                        "displayName",
-                        "comments",
-                        "taxid",
-                        "sequence",
-                        "geneName",
-                    ]
+                    "example": EDGE_COLLECTIONS
                 }
             }
         },
@@ -195,10 +184,12 @@ def get_attribute_values(collection_name: str, attribute: str, format: str, x_ap
 
 
 class AttributeRequest(_BaseModel):
-    node_ids: list[str] = _Field(None, title="Primary domain IDs of nodes",
-                                 description="Primary domain IDs of the nodes the attributes are requested for")
-    attributes: list[str] = _Field(None, title="Attributes requested",
-                                   description="Attributes for which values are requested")
+    node_ids: Optional[list[str]] = _Field(None, title="Primary domain IDs of nodes", description="Primary domain IDs of the nodes the attributes are requested for")
+    target_domain_id: Optional[list[str]] = _Field(None, title="Target Domain IDs", description="Target domain IDs of the edges the attributes are requested for")
+    source_domain_id: Optional[list[str]] = _Field(None, title="Source Domain IDs", description="Source domain IDs of the edges the attributes are requested for")
+    attributes: list[str] = _Field(None, title="Attributes requested", description="Attributes for which values are requested")
+    skip: int = _Field(0, title="Skip", description="The number of entries to skip")
+    limit: int = _Field(10000, title="Limit", description="The number of entries to return")
 
     class Config:
         extra = "forbid"
@@ -206,27 +197,58 @@ class AttributeRequest(_BaseModel):
 
 @router.post("/{collection_name}/attributes/{format}", summary="Get for collection members selected attribute values")
 @check_api_key_decorator
-def get_attribute_values(collection_name: str, format: str, ar: AttributeRequest = AttributeRequest(),
-                         x_api_key: str = _API_KEY_HEADER_ARG):
-    if collection_name not in NODE_COLLECTIONS:
+def get_attribute_values(collection_name: str, format: str, ar: AttributeRequest = AttributeRequest(), x_api_key: str = _API_KEY_HEADER_ARG):
+    if (collection_name not in NODE_COLLECTIONS) and (collection_name not in EDGE_COLLECTIONS):
         raise _HTTPException(
             status_code=404, detail=f"Collection {collection_name!r} is not in the database"
         )
 
     if ar.attributes is None:
         raise _HTTPException(status_code=404, detail=f"No attribute(s) requested")
-    if ar.node_ids is None:
-        raise _HTTPException(status_code=404, detail=f"No node(s) requested")
+    if ar.node_ids is None and ar.target_domain_id is None and ar.source_domain_id is None:
+        raise _HTTPException(status_code=404, detail=f"No node(s)/edge(s) requested")
+    if not ar.skip:
+        ar.skip = 0
+    if not ar.limit:
+        ar.limit = config["api.pagination_max"]
+    elif ar.limit > config["api.pagination_max"]:
+        raise _HTTPException(status_code=422, detail=f"Limit specified ({ar.limit}) greater than maximum limit allowed")
+    
 
-    query = {"primaryDomainId": {"$in": ar.node_ids}}
-
-    results = [
-        {
-            "primaryDomainId": i["primaryDomainId"],
-            **{attribute: i.get(attribute) for attribute in ar.attributes},
+    query = {}
+    results = []
+    if collection_name in NODE_COLLECTIONS:
+        query = {"primaryDomainId": {"$in": ar.node_ids}}
+        results = [
+            {
+                "primaryDomainId": i["primaryDomainId"],
+                **{attribute: i.get(attribute) for attribute in ar.attributes},
+            }
+            for i in MongoInstance.DB()[collection_name].find(query).skip(ar.skip).limit(ar.limit)
+        ]
+    elif collection_name in EDGE_COLLECTIONS and ar.source_domain_id and ar.target_domain_id:
+        query = {
+            "$and": [
+                {"sourceDomainId": {"$in": ar.source_domain_id}},
+                {"targetDomainId": {"$in": ar.target_domain_id}}
+            ]
         }
-        for i in MongoInstance.DB()[collection_name].find(query)
-    ]
+    elif collection_name in EDGE_COLLECTIONS and ar.source_domain_id:
+        query["sourceDomainId"] = {"$in": ar.source_domain_id}
+    elif collection_name in EDGE_COLLECTIONS and ar.target_domain_id:
+        query["targetDomainId"] = {"$in": ar.target_domain_id}
+        
+    if collection_name in EDGE_COLLECTIONS:
+         results = [
+                {
+                    "sourceDomainId": i["sourceDomainId"],
+                    "targetDomainId": i["targetDomainId"],
+                    **{attribute: i.get(attribute) for attribute in ar.attributes},
+                }
+                for i in MongoInstance.DB()[collection_name].find(query).skip(ar.skip).limit(ar.limit)
+            ]
+
+   
 
     if format == "json":
         return results
@@ -306,21 +328,56 @@ def get_node_attribute_values(
             None,
             description=f"Limit number of queries returned (default & maximum is {config['api.pagination_max']:,})"
         ),
-        x_api_key: str = _API_KEY_HEADER_ARG,
+        alias="node_id",
+    ),
+    source_domain_ids: list[str] = _Query(
+        None,
+        description=(
+            "Source Domain IDs to collect attribute values for - edges. "
+            "Multiple source domain IDs can be specified (e.g., `source_domain_id=<id_1>&source_domain_id=<id_2>`)"
+        ),
+        alias="source_domain_id",
+    ),
+    target_domain_ids: list[str] = _Query(
+        None,
+        description=(
+            "Target Domain IDs to collect attribute values for - edges. "
+            "Multiple target domain IDs can be specified (e.g., `target_domain_id=<id_1>&target_domain_id=<id_2>`)"
+        ),
+        alias="target_domain_id",
+    ),
+    offset: Optional[int] = _Query(None, description="Offset to use"),
+    limit: Optional[int] = _Query(
+        None, description=f"Limit number of queries returned (default & maximum is {config['api.pagination_max']:,})"
+    ),
+    x_api_key: str = _API_KEY_HEADER_ARG,
 ):
     # Singular is used for arguments because this makes sense to a user.
     # Aliasing to plural here as node_id and attribute are actually lists of 1+ strings.
-
-    if collection_name not in NODE_COLLECTIONS:
+    
+    if (collection_name not in NODE_COLLECTIONS) and (collection_name not in EDGE_COLLECTIONS):
         raise _HTTPException(status_code=404, detail=f"Collection {collection_name!r} is not in the database")
     if attributes is None:
         # get all attributes for the type
         attributes = list_attributes(collection_name)
 
-    if node_ids is None:
-        query = {}
-    else:
-        query = {"primaryDomainId": {"$in": node_ids}}
+    query = {}
+
+    if collection_name in NODE_COLLECTIONS:
+        if node_ids:
+            query["primaryDomainId"] = {"$in": node_ids}
+    elif collection_name in EDGE_COLLECTIONS:
+        if source_domain_ids and target_domain_ids:
+            query = {
+                "$and": [
+                    {"sourceDomainId": {"$in": source_domain_ids}},
+                    {"targetDomainId": {"$in": target_domain_ids}}
+                ]
+            }
+        elif source_domain_ids:
+            query["sourceDomainId"] = {"$in": source_domain_ids}
+        elif target_domain_ids:
+            query["targetDomainId"] = {"$in": target_domain_ids}
 
     if limit is None:
         limit = config["api.pagination_max"]
@@ -332,11 +389,17 @@ def get_node_attribute_values(
         kwargs["skip"] = offset
     kwargs["limit"] = limit
 
-    results = [
-        {"primaryDomainId": i["primaryDomainId"], **{attr: i.get(attr) for attr in attributes}}
-        for i in MongoInstance.DB()[collection_name].find(query, **kwargs)
-    ]
-
+    if collection_name in NODE_COLLECTIONS:
+        results = [
+            {"primaryDomainId": i["primaryDomainId"], **{attr: i.get(attr) for attr in attributes}}
+            for i in MongoInstance.DB()[collection_name].find(query, **kwargs)
+        ]
+    elif collection_name in EDGE_COLLECTIONS:
+        results = [
+            {"sourceDomainId": i["sourceDomainId"], "targetDomainId": i["targetDomainId"], **{attr: i.get(attr) for attr in attributes}}
+            for i in MongoInstance.DB()[collection_name].find(query, **kwargs)
+        ]
+        
     if format == "json":
         return results
     elif format in {"csv", "tsv"}:
