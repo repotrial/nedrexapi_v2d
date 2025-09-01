@@ -323,13 +323,6 @@ def get_node_attribute_values(
             ),
             alias="node_id",
         ),
-        offset: Optional[int] = _Query(None, description="Offset to use"),
-        limit: Optional[int] = _Query(
-            None,
-            description=f"Limit number of queries returned (default & maximum is {config['api.pagination_max']:,})"
-        ),
-        alias="node_id",
-    ),
     source_domain_ids: list[str] = _Query(
         None,
         description=(
