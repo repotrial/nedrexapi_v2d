@@ -38,7 +38,7 @@ certifi = "^2024.07.04"
 numpy = ">=1.0.0,<2.0.0"
 langchain-community = "^0.3.14"
 langchain = "^0.3.14"
-langchain-neo4j = "^0.2.0"
+langchain-neo4j = "^0.4.0"
 langchain-ollama = "^0.2.2"
 aiohttp = "^3.12.14"
 
