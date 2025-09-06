@@ -15,6 +15,7 @@ router = _APIRouter()
 
 
 async def run_query(query):
+    print(query)
     result = _NEO4J_DRIVER.run(query)
     for chunk in chunked(result, 1_000):
         yield json.dumps([json.loads(json.dumps(i, default=lambda o: dict(o))) for i in chunk]) + "\n"
