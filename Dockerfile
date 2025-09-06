@@ -33,7 +33,6 @@ RUN conda init bash
 RUN mamba update -n base -c defaults mamba conda
 RUN mamba install -y python=3.10
 RUN mamba update -y --all
-#RUN conda install --override-channels -c conda-forge mamba 'python_abi=*=*cp*'
 RUN pip install pip==23
 RUN pip install --upgrade pip requests cryptography pyopenssl
 RUN chmod 777 -R /opt/conda
@@ -41,13 +40,14 @@ RUN chmod 777 -R /opt/conda
 FROM nedrexapi_base
 RUN apt-get update && apt-get upgrade -y && apt-get autoclean -y && apt-get autoremove -y && apt-get clean -y
 
-RUN mamba update pip requests cryptography pyopenssl
 RUN mamba install -c conda-forge graph-tool==2.97 poetry
 
 WORKDIR /app/nedrexapi
 
 RUN mamba create -n bicon python=3.8
-RUN mamba run -n bicon pip install git+https://github.com/biomedbigdata/BiCoN.git click networkx==2.8.8
+RUN mamba run -n bicon pip install git+https://github.com/daisybio/BiCoN.git
+RUN mamba run -n bicon pip install click
+RUN mamba run -n bicon pip install networkx==2.8.8
 
 COPY pyproject.toml poetry.lock ./
 RUN poetry config virtualenvs.create false

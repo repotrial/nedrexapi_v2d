@@ -7,13 +7,15 @@ name: Docker
 
 on:
   schedule:
-    - cron: '44 3 * * *'
+    - cron: '0 8 * * 4'
   push:
-    branches: [ "master", "dev" ]
+#    branches: [ "repo4eu_main", "repo4eu_dev" ]
+    branches: [ "master", "dev"]
     # Publish semver tags as releases.
     tags: [ 'v*.*.*' ]
   pull_request:
-    branches: [ "master", "dev" ]
+#    branches: [ "repo4eu_main", "repo4eu_dev" ]
+    branches: [ "master", "dev"]
 
 env:
   # Use docker.io for Docker Hub if empty
@@ -39,6 +41,13 @@ jobs:
         with:
           submodules: 'recursive'
           token: ${{ secrets.GH_TOKEN }}
+      # prevent caching
+      - name: Force clean submodule update
+        run: |
+          git submodule sync --recursive
+          git submodule foreach --recursive git fetch --all
+          git submodule update --remote --recursive --force
+          
       # prevent caching
       - name: Force clean submodule update
         run: |
@@ -86,7 +95,8 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
+          #,linux/arm64
           cache-from: type=gha
           cache-to: type=gha, mode=max
 
