@@ -643,7 +643,7 @@ def translate_entrez_to_uniprot(idr: IDsOnlyRequest, x_api_key: str = _API_KEY_H
         else:
             query_set.add(q)
 
-    for entry in MongoInstance.DB()["protein_encoded_by_gene"].find({"targetDomainId": {"$in" :query_set}}):
+    for entry in MongoInstance.DB()["protein_encoded_by_gene"].find({"targetDomainId": {"$in" :list(query_set)}}):
         response[entry["targetDomainId"]].add(entry["sourceDomainId"])
 
     return response
