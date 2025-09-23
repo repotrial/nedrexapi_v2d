@@ -608,6 +608,11 @@ def translate_entrez_to_uniprot(q: str, x_api_key: str = _API_KEY_HEADER_ARG):
 
     return response
 
+
+
+class IDsOnlyRequest(_BaseModel):
+    ids: list[str]
+
 @router.post("/entrez_to_uniprot_ids",
     responses = {
         200: {"content": {"application/json": { "entrez.1234":["uniprot.3213", "uniprot.4321"], "entrez.4341":["uniprot:7265"]}}},
@@ -616,22 +621,22 @@ def translate_entrez_to_uniprot(q: str, x_api_key: str = _API_KEY_HEADER_ARG):
     summary = "Translate multiple entrez to UniProt IDs",
             )
 @check_api_key_decorator
-def translate_entrez_to_uniprot(idr: IDRequest, x_api_key: str = _API_KEY_HEADER_ARG):
+def translate_entrez_to_uniprot(idr: IDsOnlyRequest, x_api_key: str = _API_KEY_HEADER_ARG):
     """
     Returns a mapping of multiple `{user-supplied-id: [primaryDomainId]}` in
     entrez space to all mapped versions of uniprot IDs.
     The values in the hash map are a list, as multiple protein IDs can exist of a single entrez ID.
     """
-    if not idr.id_list:
+    if not idr.ids:
         return {}
 
-    if len(idr.id_list) == 0:
+    if len(idr.ids) == 0:
         return {}
 
     response = dict()
     query_set = set()
 
-    for q in idr.id_list:
+    for q in idr.ids:
         response[q] = set()
         if not q.startswith("entrez."):
             response[q] = "Not a valid entrez ID"
