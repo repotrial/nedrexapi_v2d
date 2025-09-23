@@ -576,3 +576,40 @@ def id_map(collection: str, q: list[str] = DEFAULT_QUERY, x_api_key: str = _API_
         raise _HTTPException(status_code=404, detail=f"Collection {collection!r} is not in the database")
     result = {item: get_primary_id(item, collection) for item in q}
     return result
+
+@router.get("/entrez_to_uniprot",
+    responses = {
+        200: {"content": {"application/json": { "entrez.1234":["uniprot.3213", "uniprot.4321"]}}},
+        404: {"content": {"application/json": {"1234": "Not a valid entrez ID"}}}
+    },
+    summary = "Translates entrez gene IDs to UniProt protein IDs",
+            )
+@check_api_key_decorator
+def translate_entrez_to_uniprot(q: str, x_api_key: str = _API_KEY_HEADER_ARG):
+    """
+    Returns a mapping of `{user-supplied-id: [primaryDomainId]}` for a user-specified identifier in a
+    entrez space to all mapped versions of uniprot IDs.
+    The values in the hash map are a list, as multiple protein IDs can exist of a single entrez ID.
+    """
+    if not q:
+        return {}
+
+    if not q.startswith("entrez."):
+        return {q:"Not a valid entrez ID"}
+
+    result = {item: get_primary_id(item, "gene") for item in q}
+
+    if len(result.items()) == 0:
+        return {q:"Not entries found"}
+
+    response = {q:set()}
+    for entry in MongoInstance.DB()["protein_encoded_by_gene"].find({"targetDomainId": q}):
+        response[entry["targetDomainId"]].add(entry["sourceDomainId"])
+
+    return response
+
+
+
+
+
+
