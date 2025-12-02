@@ -4,14 +4,22 @@ services:
   open-nedrex-redis:
     image: redis:8
     container_name: open_nedrex_live_redis
-#    ports:
-#      - "127.0.0.1:5379:6379"
+    #    ports:
+    #      - "127.0.0.1:5379:6379"
+    restart: always
+    networks:
+      - nedrexdb_default
+
+  licensed-nedrex-redis:
+    image: redis:8
+    container_name: licensed_nedrex_live_redis
+    #    ports:
+    #      - "127.0.0.1:6379:6379"
     restart: always
     networks:
       - nedrexdb_default
 
   worker_open:
-    platform: linux/amd64
     image: ghcr.io/repotrial/nedrexapi_v2d:master
     build:
       context: .
@@ -19,7 +27,7 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./config/open_config.toml:/app/nedrexapi/.open_config.toml
-      - /Users/kester/Desktop/Nedrex_full/nedrexapi/nedrex_files:/data/nedrex_files
+      - /home/andim/projects/nedrex/nedrexdb_v2d/nedrex_files:/data/nedrex_files
       - /tmp:/tmp
     command:
       - "bash"
@@ -36,22 +44,55 @@ services:
       - nedrexdb_default
     restart: always
   runner_open:
-    platform: linux/amd64
     image: ghcr.io/repotrial/nedrexapi_v2d:master
     container_name: nedrexapi_open
     ports:
       - 7123:7123
     volumes:
       - ./config/open_config.toml:/app/nedrexapi/.open_config.toml
-      - /Users/kester/Desktop/Nedrex_full/nedrexapi/nedrex_files:/data/nedrex_files
+      - /home/andim/projects/nedrex/nedrexdb_v2d/nedrex_files:/data/nedrex_files
       - /tmp:/tmp
     command:
       - "bash"
       - "./run_open.sh"
     networks:
       - nedrexdb_default
+  worker_licensed:
+    image: ghcr.io/repotrial/nedrexapi_v2d:master
+    container_name: nedrexapi_worker_licensed
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./config/licensed_config.toml:/app/nedrexapi/.licensed_config.toml
+      - /home/andim/projects/nedrex/nedrexdb_v2d/nedrex_files:/data/nedrex_files
+      - /tmp:/tmp
+    command:
+      - "bash"
+      - "./start_worker.sh"
+      - "-c"
+      - ".licensed_config.toml"
+      - "-h"
+      - "licensed-nedrex-redis"
+      - "-p"
+      - "6379"
+      - "-d"
+      - "3"
+    networks:
+      - nedrexdb_default
+    restart: always
+  runner_licensed:
+    image: ghcr.io/repotrial/nedrexapi_v2d:master
+    container_name: nedrexapi_licensed
+    ports:
+      - 6123:8123
+    volumes:
+      - ./config/licensed_config.toml:/app/nedrexapi/.licensed_config.toml
+      - /home/andim/projects/nedrex/nedrexdb_v2d/nedrex_files:/data/nedrex_files
+      - /tmp:/tmp
+    command:
+      - "bash"
+      - "./run_licensed.sh"
+    networks:
+      - nedrexdb_default
 networks:
-    nedrexdb_default:
-        external: true
-
-
+  nedrexdb_default:
+    external: true
