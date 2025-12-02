@@ -1,4 +1,4 @@
-FROM --platform=linux/amd64 ubuntu:noble as nedrexapi_base
+FROM ubuntu:noble as nedrexapi_base
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 ENV LC_ALL=C.UTF-8
@@ -6,7 +6,7 @@ ENV LANG=C.UTF-8
 ENV TZ=Europe/Berlin
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
-RUN apt-get update && apt-get dist-upgrade -y && apt-get install -y supervisor libgtk-3-dev wget apt-utils libxml2-dev libxslt1-dev
+RUN apt-get update && apt-get dist-upgrade -y && apt-get install -y supervisor libgtk-3-dev wget apt-utils
 RUN apt-get update && apt-get install -y apt-transport-https ca-certificates curl gnupg lsb-release software-properties-common build-essential
 RUN apt-get autoclean -y && apt-get autoremove -y && apt-get clean -y
 
@@ -45,8 +45,7 @@ RUN mamba install -c conda-forge graph-tool==2.97 poetry
 WORKDIR /app/nedrexapi
 
 RUN mamba create -n bicon python=3.8
-RUN mamba run -n bicon pip install "Cython<3"
-RUN mamba run -n bicon pip install --no-build-isolation git+https://github.com/daisybio/BiCoN.git
+RUN mamba run -n bicon pip install git+https://github.com/daisybio/BiCoN.git
 RUN mamba run -n bicon pip install click
 RUN mamba run -n bicon pip install networkx==2.8.8
 
