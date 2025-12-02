@@ -18,10 +18,16 @@ _LLM_BASE, _LLM_model, _LLM_path, generate, chat
 from nedrexapi.routers.embeddings import run_neo4j_query
 
 from nedrexapi.config import config as _config
+from nedrexapi.logger import logger
 
 _NEO4J_PORT = _config[f'db.{_config["api.status"]}.neo4j_bolt_port_internal']
 _NEO4J_HOST = _config[f'db.{_config["api.status"]}.neo4j_name']
-_NEO4J_DRIVER = Neo4jGraph(f"bolt://{_NEO4J_HOST}:{_NEO4J_PORT}", username="", password="", database='neo4j')
+_NEO4J_DRIVER = None
+
+try:
+    _NEO4J_DRIVER = Neo4jGraph(f"bolt://{_NEO4J_HOST}:{_NEO4J_PORT}", username="", password="", database='neo4j')
+except Exception as exc:
+    logger.error("Failed to initialize Neo4j driver for chat routes: {}", exc)
 
 class QuestionRequest(_BaseModel):
     query: str = _Field("", title="Query that is used to search for hits in the knowledge graph and subsequently answer the posed question.", description="This query will be used to find the closest matches in the KG and subsequently answer the question using an LLM", examples=["What is AD5?", "What is a prion disease?"])

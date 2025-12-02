@@ -16,10 +16,16 @@ _LLM_BASE, _LLM_model, _LLM_path
 )
 
 from nedrexapi.config import config as _config
+from nedrexapi.logger import logger
 
 _NEO4J_PORT = _config[f'db.{_config["api.status"]}.neo4j_bolt_port_internal']
 _NEO4J_HOST = _config[f'db.{_config["api.status"]}.neo4j_name']
-_NEO4J_DRIVER = Neo4jGraph(f"bolt://{_NEO4J_HOST}:{_NEO4J_PORT}", username="", password="", database='neo4j')
+_NEO4J_DRIVER = None
+
+try:
+    _NEO4J_DRIVER = Neo4jGraph(f"bolt://{_NEO4J_HOST}:{_NEO4J_PORT}", username="", password="", database='neo4j')
+except Exception as exc:
+    logger.error("Failed to initialize Neo4j driver for embeddings routes: {}", exc)
 
 router = _APIRouter()
 
@@ -32,6 +38,8 @@ class QueryEmbeddingRequest(_BaseModel):
 DEFAULT_QUERY_EMBEDDING_REQUEST = QueryEmbeddingRequest()
 
 def run_neo4j_query(neo4j_query, params={}):
+    if _NEO4J_DRIVER is None:
+        raise _HTTPException(status_code=503, detail="Embeddings backend is not configured.")
     res = _NEO4J_DRIVER.query(query=neo4j_query, params=params)
     return res
 
