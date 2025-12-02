@@ -2,15 +2,6 @@ version_type = "open"
 static_outside = "../nedrex_files/nedrex_api/static" # your path
 data_outside = "../nedrex_files/nedrex_api/data" # your path
 
-[api]
-status = "live"
-mongo_port_internal = 27017
-mongo_db           = "nedrex"
-
-[api.directories]
-static = "/data/nedrex_files/nedrex_api/static"
-data   = "/data/nedrex_files/nedrex_api/data"
-
 node_collections = [
     "disorder",
     "drug",
@@ -23,7 +14,7 @@ node_collections = [
     "tissue",
     "side_effect",
     "signature",
-    ]
+]
 
 edge_collections = [
     "disorder_has_phenotype",
@@ -58,12 +49,12 @@ path="embeddings"
 api_key="sk-****************************"
 
 [chat]
-server_base="None"  
+server_base="None"
 model="None"
 
 [db]
 version = "open"
-neo4j_image = "neo4j:5.25.1"
+neo4j_image = "ghcr.io/repotrial/nedrexdb_v2d-neo4j:dev"
 mongo_image = "mongo:5.0.27"
 mongo_express_image = "mongo-express:0.54.0"
 mongo_db = "nedrex"
