@@ -14,7 +14,7 @@ node_collections = [
     "tissue",
     "side_effect",
     "signature",
-    ]
+]
 
 edge_collections = [
     "disorder_has_phenotype",
@@ -42,14 +42,14 @@ edge_collections = [
 bicon_python = "/opt/conda/envs/bicon/bin/python"
 
 [embeddings]
-server_base="https://dev.llm-1.cosy.bio/v1"
+server_base="*****"
 model="granite-embedding:latest"
 embedding_length=384
 path="embeddings"
 api_key="sk-****************************"
 
 [chat]
-server_base="None"  
+server_base="None"
 model="None"
 
 [db]
