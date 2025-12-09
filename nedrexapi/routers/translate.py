@@ -193,36 +193,12 @@ def get_uniprot_id(genes: NodeListRequest = _DEFAULT_NODE_REQUEST, x_api_key: st
 
     results: dict[str, list[str]] = {gene: [] for gene in genes.nodes}
 
-    protein_coll = MongoInstance.DB()["protein"]
-
-    potential_uniprots = {}
     non_uniprot_inputs = []
     for i in genes.nodes:
         if re.fullmatch(r"[A-Z0-9]{5,}", i) and not i.startswith("ENS") and not re.fullmatch(r"\d+", i):
-            clean_uniprot = i.upper()
-            potential_uniprots[clean_uniprot] = i
+            results[i].append(i.upper())
         else:
             non_uniprot_inputs.append(i)
-
-    if potential_uniprots:
-        uniprot_ids_to_check = [f"uniprot.{up}" for up in potential_uniprots.keys()]
-        found_uniprots = set()
-        for doc in protein_coll.find({"$or": [
-            {"primaryDomainId": {"$in": uniprot_ids_to_check}},
-            {"domainIds": {"$in": uniprot_ids_to_check}}
-        ]}):
-            primary = doc.get("primaryDomainId", "").replace("uniprot.", "")
-            if primary:
-                found_uniprots.add(primary)
-            for domain_id in doc.get("domainIds", []):
-                if domain_id.startswith("uniprot."):
-                    found_uniprots.add(domain_id.replace("uniprot.", ""))
-
-        for clean_uniprot, original_input in potential_uniprots.items():
-            if clean_uniprot in found_uniprots:
-                results[original_input].append(clean_uniprot)
-            else:
-                non_uniprot_inputs.append(original_input)
 
     if not non_uniprot_inputs:
         return results
