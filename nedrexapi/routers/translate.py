@@ -48,6 +48,15 @@ def get_entrez_id(genes: NodeListRequest = _DEFAULT_NODE_REQUEST, x_api_key: str
     normalized_genes = []
     for i in non_entrez_inputs:
         if re.fullmatch(r"ENS[GTP]\d+(\.\d+)?", i):
+
+    if not genes.nodes:
+        return {}
+    
+    normalized_genes = []
+    for i in genes.nodes:
+        if re.fullmatch(r"\d+", i):
+            normalized_genes.append(f"entrez.{i}")
+        elif re.fullmatch(r"ENS[GTP]\d+(\.\d+)?", i):
             normalized_genes.append(f"ensembl.{i}")
         elif re.fullmatch(r"[A-Z0-9]{5,}", i) and not i.startswith("ENS"):
             normalized_genes.append(f"uniprot.{i}")
@@ -60,7 +69,8 @@ def get_entrez_id(genes: NodeListRequest = _DEFAULT_NODE_REQUEST, x_api_key: str
     protein_coll = MongoInstance.DB()["protein"]
     edge_coll = MongoInstance.DB()["protein_encoded_by_gene"]
 
-    input_to_normalized = dict(zip(non_entrez_inputs, normalized_genes))
+    results: dict[str, list[str]] = {gene: [] for gene in genes.nodes}
+    input_to_normalized = dict(zip(genes.nodes, normalized_genes))
     
     if uniprot_ids:
         protein_query = {
@@ -94,7 +104,7 @@ def get_entrez_id(genes: NodeListRequest = _DEFAULT_NODE_REQUEST, x_api_key: str
             if gene_ids_found:
                 uniprot_to_genes[protein_id_clean] = gene_ids_found
         
-        for original_input in non_entrez_inputs:
+        for original_input in genes.nodes:
             normalized = input_to_normalized[original_input]
             if normalized in uniprot_ids:
                 clean_uniprot = original_input.upper()
@@ -166,7 +176,7 @@ def get_entrez_id(genes: NodeListRequest = _DEFAULT_NODE_REQUEST, x_api_key: str
             if doc.get("displayName"):
                 doc_symbols.add(doc.get("displayName"))
             
-            for original_input in non_entrez_inputs:
+            for original_input in genes.nodes:
                 normalized = input_to_normalized[original_input]
                 if normalized in uniprot_ids:
                     continue
@@ -188,54 +198,18 @@ def get_entrez_id(genes: NodeListRequest = _DEFAULT_NODE_REQUEST, x_api_key: str
 @router.post("/translate_uniprot")
 @check_api_key_decorator
 def get_uniprot_id(genes: NodeListRequest = _DEFAULT_NODE_REQUEST, x_api_key: str = _API_KEY_HEADER_ARG):
+
     if not genes.nodes:
         return {}
     
-    results: dict[str, list[str]] = {gene: [] for gene in genes.nodes}
-    
-    protein_coll = MongoInstance.DB()["protein"]
-    
-    # Batch check potential uniprot IDs
-    potential_uniprots = {}
-    non_uniprot_inputs = []
-    for i in genes.nodes:
-        if re.fullmatch(r"[A-Z0-9]{5,}", i) and not i.startswith("ENS") and not re.fullmatch(r"\d+", i):
-            clean_uniprot = i.upper()
-            potential_uniprots[clean_uniprot] = i
-        else:
-            non_uniprot_inputs.append(i)
-    
-    # Batch query all potential uniprot IDs at once
-    if potential_uniprots:
-        uniprot_ids_to_check = [f"uniprot.{up}" for up in potential_uniprots.keys()]
-        found_uniprots = set()
-        for doc in protein_coll.find({"$or": [
-            {"primaryDomainId": {"$in": uniprot_ids_to_check}},
-            {"domainIds": {"$in": uniprot_ids_to_check}}
-        ]}):
-            primary = doc.get("primaryDomainId", "").replace("uniprot.", "")
-            if primary:
-                found_uniprots.add(primary)
-            for domain_id in doc.get("domainIds", []):
-                if domain_id.startswith("uniprot."):
-                    found_uniprots.add(domain_id.replace("uniprot.", ""))
-        
-        # Separate found and not found
-        for clean_uniprot, original_input in potential_uniprots.items():
-            if clean_uniprot in found_uniprots:
-                results[original_input].append(clean_uniprot)
-            else:
-                non_uniprot_inputs.append(original_input)
-    
-    if not non_uniprot_inputs:
-        return results
-    
     normalized_genes = []
-    for i in non_uniprot_inputs:
+    for i in genes.nodes:
         if re.fullmatch(r"\d+", i):
             normalized_genes.append(f"entrez.{i}")
         elif re.fullmatch(r"ENS[GTP]\d+(\.\d+)?", i):
             normalized_genes.append(f"ensembl.{i}")
+        elif re.fullmatch(r"[A-Z0-9]{5,}", i) and not i.startswith("ENS"):
+            normalized_genes.append(f"uniprot.{i}")
         else:
             normalized_genes.append(i)
 
@@ -245,7 +219,8 @@ def get_uniprot_id(genes: NodeListRequest = _DEFAULT_NODE_REQUEST, x_api_key: st
     protein_coll = MongoInstance.DB()["protein"]
     edge_coll = MongoInstance.DB()["protein_encoded_by_gene"]
     
-    input_to_normalized = dict(zip(non_uniprot_inputs, normalized_genes))
+    results: dict[str, list[str]] = {gene: [] for gene in genes.nodes}
+    input_to_normalized = dict(zip(genes.nodes, normalized_genes))
     
     if uniprot_ids:
         protein_query = {
@@ -279,7 +254,7 @@ def get_uniprot_id(genes: NodeListRequest = _DEFAULT_NODE_REQUEST, x_api_key: st
             if gene_ids_found:
                 uniprot_to_genes[protein_id_clean] = gene_ids_found
         
-        for original_input in non_uniprot_inputs:
+        for original_input in genes.nodes:
             normalized = input_to_normalized[original_input]
             if normalized in uniprot_ids:
                 clean_uniprot = original_input.upper()
@@ -339,7 +314,7 @@ def get_uniprot_id(genes: NodeListRequest = _DEFAULT_NODE_REQUEST, x_api_key: st
             if doc.get("displayName"):
                 doc_symbols.add(doc.get("displayName"))
             
-            for original_input in non_uniprot_inputs:
+            for original_input in genes.nodes:
                 normalized = input_to_normalized[original_input]
                 if normalized in uniprot_ids:
                     continue
