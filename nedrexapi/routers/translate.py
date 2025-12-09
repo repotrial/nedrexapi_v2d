@@ -195,7 +195,6 @@ def get_uniprot_id(genes: NodeListRequest = _DEFAULT_NODE_REQUEST, x_api_key: st
     
     protein_coll = MongoInstance.DB()["protein"]
     
-    # Batch check potential uniprot IDs
     potential_uniprots = {}
     non_uniprot_inputs = []
     for i in genes.nodes:
@@ -205,7 +204,6 @@ def get_uniprot_id(genes: NodeListRequest = _DEFAULT_NODE_REQUEST, x_api_key: st
         else:
             non_uniprot_inputs.append(i)
     
-    # Batch query all potential uniprot IDs at once
     if potential_uniprots:
         uniprot_ids_to_check = [f"uniprot.{up}" for up in potential_uniprots.keys()]
         found_uniprots = set()
@@ -220,7 +218,6 @@ def get_uniprot_id(genes: NodeListRequest = _DEFAULT_NODE_REQUEST, x_api_key: st
                 if domain_id.startswith("uniprot."):
                     found_uniprots.add(domain_id.replace("uniprot.", ""))
         
-        # Separate found and not found
         for clean_uniprot, original_input in potential_uniprots.items():
             if clean_uniprot in found_uniprots:
                 results[original_input].append(clean_uniprot)
