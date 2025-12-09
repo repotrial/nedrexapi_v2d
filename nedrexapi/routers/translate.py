@@ -195,21 +195,37 @@ def get_uniprot_id(genes: NodeListRequest = _DEFAULT_NODE_REQUEST, x_api_key: st
     
     protein_coll = MongoInstance.DB()["protein"]
     
-    uniprot_inputs = []
+    # Batch check potential uniprot IDs
+    potential_uniprots = {}
     non_uniprot_inputs = []
     for i in genes.nodes:
         if re.fullmatch(r"[A-Z0-9]{5,}", i) and not i.startswith("ENS") and not re.fullmatch(r"\d+", i):
             clean_uniprot = i.upper()
-            if protein_coll.find_one({"$or": [
-                {"primaryDomainId": f"uniprot.{clean_uniprot}"},
-                {"domainIds": f"uniprot.{clean_uniprot}"}
-            ]}):
-                uniprot_inputs.append(clean_uniprot)
-                results[i].append(clean_uniprot)
-            else:
-                non_uniprot_inputs.append(i)
+            potential_uniprots[clean_uniprot] = i
         else:
             non_uniprot_inputs.append(i)
+    
+    # Batch query all potential uniprot IDs at once
+    if potential_uniprots:
+        uniprot_ids_to_check = [f"uniprot.{up}" for up in potential_uniprots.keys()]
+        found_uniprots = set()
+        for doc in protein_coll.find({"$or": [
+            {"primaryDomainId": {"$in": uniprot_ids_to_check}},
+            {"domainIds": {"$in": uniprot_ids_to_check}}
+        ]}):
+            primary = doc.get("primaryDomainId", "").replace("uniprot.", "")
+            if primary:
+                found_uniprots.add(primary)
+            for domain_id in doc.get("domainIds", []):
+                if domain_id.startswith("uniprot."):
+                    found_uniprots.add(domain_id.replace("uniprot.", ""))
+        
+        # Separate found and not found
+        for clean_uniprot, original_input in potential_uniprots.items():
+            if clean_uniprot in found_uniprots:
+                results[original_input].append(clean_uniprot)
+            else:
+                non_uniprot_inputs.append(original_input)
     
     if not non_uniprot_inputs:
         return results
