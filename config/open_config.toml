@@ -42,7 +42,7 @@ edge_collections = [
 bicon_python = "/opt/conda/envs/bicon/bin/python"
 
 [embeddings]
-server_base="https://dev.llm-1.cosy.bio/v1"
+server_base="*****"
 model="granite-embedding:latest"
 embedding_length=384
 path="embeddings"
