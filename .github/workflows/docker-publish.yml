@@ -6,8 +6,8 @@ name: Docker
 # documentation.
 
 on:
-  schedule:
-    - cron: '0 8 * * 4'
+#  schedule:
+#    - cron: '0 8 * * 4'
   push:
 #    branches: [ "repo4eu_main", "repo4eu_dev" ]
     branches: [ "master", "dev"]
