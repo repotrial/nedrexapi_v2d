@@ -3,7 +3,7 @@ from fastapi import HTTPException as _HTTPException
 from fastapi import Response as _Response
 from pydantic import BaseModel as _BaseModel
 from pydantic import Field as _Field
-from langchain_community.graphs import Neo4jGraph
+from langchain_neo4j import Neo4jGraph
 import json
 
 from nedrexapi.common import (
