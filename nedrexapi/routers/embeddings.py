@@ -5,6 +5,7 @@ from pydantic import BaseModel as _BaseModel
 from pydantic import Field as _Field
 from langchain_neo4j import Neo4jGraph
 import json
+import time
 
 from nedrexapi.common import (
     _API_KEY_HEADER_ARG,
@@ -20,12 +21,13 @@ from nedrexapi.logger import logger
 
 _NEO4J_PORT = _config[f'db.{_config["api.status"]}.neo4j_bolt_port_internal']
 _NEO4J_HOST = _config[f'db.{_config["api.status"]}.neo4j_name']
-_NEO4J_DRIVER = None
-
-try:
-    _NEO4J_DRIVER = Neo4jGraph(f"bolt://{_NEO4J_HOST}:{_NEO4J_PORT}", username="", password="", database='neo4j')
-except Exception as exc:
-    logger.error("Failed to initialize Neo4j driver for embeddings routes: {}", exc)
+open_con = None
+# _NEO4J_DRIVER = None
+#
+# try:
+#     _NEO4J_DRIVER = Neo4jGraph(f"bolt://{_NEO4J_HOST}:{_NEO4J_PORT}", username="", password="", database='neo4j')
+# except Exception as exc:
+#     logger.error("Failed to initialize Neo4j driver for embeddings routes: {}", exc)
 
 router = _APIRouter()
 
@@ -37,12 +39,40 @@ class QueryEmbeddingRequest(_BaseModel):
 
 DEFAULT_QUERY_EMBEDDING_REQUEST = QueryEmbeddingRequest()
 
-def run_neo4j_query(neo4j_query, params={}):
-    if _NEO4J_DRIVER is None:
-        raise _HTTPException(status_code=503, detail="Embeddings backend is not configured.")
-    res = _NEO4J_DRIVER.query(query=neo4j_query, params=params)
-    return res
+def get_kg_connection() -> Neo4jGraph:
+    global open_con
+    NEO4J_URI = f'bolt://{_NEO4J_HOST}:7687'
 
+    retry = 10
+    while retry > 0:
+        try:
+            if open_con is None:
+                logger.debug(f"Opening connection to {NEO4J_URI}")
+                open_con = Neo4jGraph(
+                    url=NEO4J_URI, username="", password="", database='neo4j'
+                )
+            if open_con is not None:
+                return open_con
+        except Exception:
+            retry -= 1
+            if retry == 0:
+                logger.error(f"Failed to connect to Neo4j at {NEO4J_URI} after {10} retries!")
+                return None
+        time.sleep(5)
+
+
+def close_kg_connection():
+    global open_con
+    if open_con is not None:
+        open_con.close()
+        open_con = None
+
+
+def run_neo4j_query(neo4j_query, params={}):
+    kg = get_kg_connection()
+    res = kg.query(query=neo4j_query, params=params)
+    kg.close()
+    return res
 
 def to_json(result):
     return json.dumps([json.loads(json.dumps(result, default=lambda o: dict(o)))]) + "\n"
