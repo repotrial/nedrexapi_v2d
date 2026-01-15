@@ -10,9 +10,9 @@ _LLM_path=_config[f"embeddings.path"]
 # _LLM_user=_config[f"embeddings.user"]
 # _LLM_pass=_config[f"embeddings.pass"]
 
-_LLM_chat_model=_config[f"chat.model"]
-_LLM_chat_base=_config[f"chat.server_base"]
-_LLM_chat_api_key=_config[f"chat.api_key"]
+_LLM_chat_model=_config["chat.model"]
+_LLM_chat_base=_config["chat.server_base"]
+_LLM_chat_api_key=_config["chat.api_key"]
 
 headers = {"Authorization": "Bearer " + _LLM_chat_api_key}
 
@@ -24,6 +24,7 @@ def get_generator():
     return Ollama(base_url=_LLM_chat_base, model=_LLM_chat_model, temperature=0.0, headers=headers)
 
 def get_chat():
+    print(headers)
     return ChatOllama(base_url=_LLM_chat_base, model=_LLM_chat_model, temperature=0.0, client_kwargs={'headers': headers})
 
 def get_embedding(query):
@@ -34,7 +35,7 @@ def get_embedding(query):
 
 def generate(query):
     ollama_llm = get_generator()
-    response = ollama_llm.invoke(input=query)
+    response = ollama_llm.invoke(query)
     return response
 
 
