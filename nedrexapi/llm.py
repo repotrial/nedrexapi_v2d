@@ -12,16 +12,19 @@ _LLM_path=_config[f"embeddings.path"]
 
 _LLM_chat_model=_config[f"chat.model"]
 _LLM_chat_base=_config[f"chat.server_base"]
+_LLM_chat_api_key=_config[f"chat.api_key"]
+
+headers = {"Authorization": "Bearer  " + _LLM_chat_api_key}
 
 
 def get_embedder():
-    return OllamaEmbeddings(base_url=_LLM_BASE, model=_LLM_model)
+    return OllamaEmbeddings(base_url=_LLM_BASE, model=_LLM_model, headers={'headers': headers})
 
 def get_generator():
-    return Ollama(base_url=_LLM_chat_base, model=_LLM_chat_model, temperature=0.0)
+    return Ollama(base_url=_LLM_chat_base, model=_LLM_chat_model, temperature=0.0, headers={'headers': headers})
 
 def get_chat():
-    return ChatOllama(base_url=_LLM_chat_base, model=_LLM_chat_model, temperature=0.0)
+    return ChatOllama(base_url=_LLM_chat_base, model=_LLM_chat_model, temperature=0.0, client_kwargs={'headers': headers})
 
 def get_embedding(query):
     embedder = get_embedder()
