@@ -179,13 +179,13 @@ def query_all_embeddings(query, top):
 @router.post("/query")
 @check_api_key_decorator
 def query_embeddings(request: QueryEmbeddingRequest = DEFAULT_QUERY_EMBEDDING_REQUEST):
-    type = request.collection
+    collection = request.collection
     top = request.top if request.top else 5
-    if type is None:
+    if collection is None:
         results = query_all_embeddings(request.query, top)
     else:
         embedding = create_embedding(request.query)
-        results = query_single_embedding(embedding, type, top)
+        results = query_single_embedding(embedding, collection, top)
     return _Response(to_json(results))
 
 
