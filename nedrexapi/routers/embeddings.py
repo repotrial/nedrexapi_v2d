@@ -37,6 +37,16 @@ class QueryEmbeddingRequest(_BaseModel):
 
 DEFAULT_QUERY_EMBEDDING_REQUEST = QueryEmbeddingRequest()
 
+def close_neo4j_connection():
+    if _NEO4J_DRIVER is None:
+        return
+    try:
+        _NEO4J_DRIVER._driver.close()
+    except Exception as e:
+        logger.error("Failed to close Neo4j driver for embeddings routes: {}", e)
+        pass
+
+
 def run_neo4j_query(neo4j_query, params={}):
     if _NEO4J_DRIVER is None:
         raise _HTTPException(status_code=503, detail="Embeddings backend is not configured.")
@@ -64,8 +74,11 @@ def available_collections(x_api_key: str = _API_KEY_HEADER_ARG):
     """
     Returns a list of available collections in the knowledge graph where embeddings are available.
     """
-    result = get_available_collections()
-    return _Response(json.dumps([n for n in result.keys()]))
+    try:
+        result = get_available_collections()
+        return _Response(json.dumps([n for n in result.keys()]))
+    finally:
+        close_neo4j_connection()
 
 def get_properties(type, entity_type):
     if entity_type == "NODE":
@@ -179,14 +192,17 @@ def query_all_embeddings(query, top):
 @router.post("/query")
 @check_api_key_decorator
 def query_embeddings(request: QueryEmbeddingRequest = DEFAULT_QUERY_EMBEDDING_REQUEST):
-    collection = request.collection
-    top = request.top if request.top else 5
-    if collection is None:
-        results = query_all_embeddings(request.query, top)
-    else:
-        embedding = create_embedding(request.query)
-        results = query_single_embedding(embedding, collection, top)
-    return _Response(to_json(results))
+    try:
+        collection = request.collection
+        top = request.top if request.top else 5
+        if collection is None:
+            results = query_all_embeddings(request.query, top)
+        else:
+            embedding = create_embedding(request.query)
+            results = query_single_embedding(embedding, collection, top)
+        return _Response(to_json(results))
+    finally:
+        close_neo4j_connection()
 
 
 

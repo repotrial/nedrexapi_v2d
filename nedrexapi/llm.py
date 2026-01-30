@@ -24,7 +24,6 @@ def get_generator():
     return Ollama(base_url=_LLM_chat_base, model=_LLM_chat_model, temperature=0.0, headers=headers)
 
 def get_chat():
-    print(headers)
     return ChatOllama(base_url=_LLM_chat_base, model=_LLM_chat_model, temperature=0.0, client_kwargs={'headers': headers})
 
 def get_embedding(query):
