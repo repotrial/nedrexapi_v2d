@@ -84,19 +84,15 @@ jobs:
           git submodule foreach --recursive git fetch --all
           git submodule update --remote --recursive --force
 
-      # NEW STEP: Determine if we should pull 'dev' or 'master'/'latest' base image
       - name: Determine Base Image Tag
         id: base-tag
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            # If it's a PR, match the target branch of the PR
             BRANCH="${{ github.base_ref }}"
           else
-            # If it's a push, match the current branch
             BRANCH="${{ github.ref_name }}"
           fi
           
-          # Map 'master' branch to 'latest' to align with your schedule tag
           if [ "$BRANCH" = "master" ]; then
             TAG="latest"
           else
@@ -105,7 +101,6 @@ jobs:
           
           echo "tag=$TAG" >> $GITHUB_OUTPUT
 
-       Aurora Setup QEMU
       - name: Setup QEMU
         uses: docker/setup-qemu-action@v2.1.0
 
@@ -138,7 +133,6 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           platforms: linux/amd64
-          # NEW: Pass the target tag to your Dockerfile dynamically
           build-args: |
             BASE_TAG=${{ steps.base-tag.outputs.tag }}
           cache-from: type=gha
