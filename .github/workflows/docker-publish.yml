@@ -1,26 +1,33 @@
 name: Docker
 
+# This workflow uses actions that are not certified by GitHub.
+# They are provided by a third-party and are governed by
+# separate terms of service, privacy policy, and support
+# documentation.
+
 on:
   schedule:
-    - cron: '0 8 * * 4' # Runs weekly on master
+    - cron: '0 8 * * 4'
   push:
+#    branches: [ "repo4eu_main", "repo4eu_dev" ]
     branches: [ "master", "dev"]
-    # FIX: Also build the base image immediately if the base Dockerfile changes on dev/master
-    paths:
-      - 'docker/docker_base/**'
+    # Publish semver tags as releases.
     tags: [ 'v*.*.*' ]
   pull_request:
+#    branches: [ "repo4eu_main", "repo4eu_dev" ]
     branches: [ "master", "dev"]
 
 env:
+  # Use docker.io for Docker Hub if empty
   REGISTRY: ghcr.io
+  # github.repository as <account>/<repo>
   IMAGE_NAME: ${{ github.repository }}
   BASE_IMAGE_NAME: ${{ github.repository }}-base
 
+
 jobs:
-  # FIX: Adjusted condition so it builds on weekly schedule OR whenever base files change
   build-base:
-    if: github.event_name == 'schedule' || contains(github.event.commits.*.modified, 'docker/docker_base')
+    if: github.event_name == 'schedule'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -47,8 +54,14 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.BASE_IMAGE_NAME }}
           tags: |
+            # Create the 'latest' tag when the trigger is a weekly schedule
             type=schedule,pattern=latest
+
+            # Create a tag based on the branch name when you push to a branch
+            # e.g., a push to the 'dev' branch creates the 'dev' tag
             type=ref,event=branch
+
+            # Create a tag for the git commit SHA for traceability
             type=sha,prefix=,format=short
 
       - name: Build and push base Docker image
@@ -56,19 +69,21 @@ jobs:
         with:
           context: ./docker/docker_base
           file: ./docker/docker_base/Dockerfile
+          # Always push the base image when this job runs
           push: true
           tags: ${{ steps.meta-base.outputs.tags }}
           labels: ${{ steps.meta-base.outputs.labels }}
           platforms: linux/amd64
           cache-from: type=gha
           cache-to: type=gha,mode=max
-
   build-main:
     if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
+      # This is used to complete the identity challenge
+      # with sigstore/fulcio when running outside of PRs.
       id-token: write
 
     steps:
