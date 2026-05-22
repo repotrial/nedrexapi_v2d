@@ -1,4 +1,5 @@
 import json
+from neo4j.exceptions import Neo4jError
 
 from fastapi import APIRouter as _APIRouter
 from fastapi.responses import StreamingResponse, Response
@@ -50,10 +51,20 @@ def neo4j_query(query: str, stream: bool = True):
         for line in response.iter_lines():
             print(json.loads(line.decode()))
     """
+    try:
+        result = _NEO4J_DRIVER.run(query)
+
+        result.peek()
+
+    except Neo4jError as e:
+        error_payload = json.dumps({"error": "Bad Request", "details": e.message})
+
+        return Response(content=error_payload, status_code=400, media_type="application/json")
+
     if stream:
-        return StreamingResponse(run_query_stream(query))
+        return StreamingResponse(run_query_stream(result))
     else:
-        return Response(run_query(query))
+        return Response(run_query(result), media_type="application/json")
 
 
 from pydantic import BaseModel as _BaseModel
@@ -71,11 +82,21 @@ def neo4j_query(qr: QueryRequest):
         import requests
         query = "MATCH (n) RETURN n LIMIT 25"
         url = "https://api.nedrex.net/neo4j/query"
-        response = requests.post(url, json={"query":query, "stream":False})
+        response = requests.post(url, json={"query":query, "stream":True}, stream=True)
         for line in response.iter_lines():
             print(json.loads(line.decode()))
     """
+    try:
+        result = _NEO4J_DRIVER.run(qr.query)
+
+        result.peek()
+
+    except Neo4jError as e:
+        error_payload = json.dumps({"error": "Bad Request", "details": e.message})
+
+        return Response(content=error_payload, status_code=400, media_type="application/json")
+
     if qr.stream:
-        return StreamingResponse(run_query_stream(qr.query))
+        return StreamingResponse(run_query_stream(result))
     else:
-        return Response(run_query(qr.query))
+        return Response(run_query(result), media_type="application/json")
