@@ -25,15 +25,12 @@ def prepare_results(neo4j_result_entry):
             new_entry[k] = v
     return new_entry
 
-async def run_query_stream(query):
-    result = _NEO4J_DRIVER.run(query)
-    for chunk in chunked(result, 1_000):
+async def run_query_stream(cursor):
+    for chunk in chunked(cursor, 1_000):
         yield json.dumps([json.loads(json.dumps(prepare_results(i), default=lambda o: dict(o))) for i in chunk]) + "\n"
 
-
-def run_query(query):
-    result = _NEO4J_DRIVER.run(query)
-    return json.dumps([json.loads(json.dumps(prepare_results(i), default=lambda o: dict(o))) for i in result])
+def run_query(cursor):
+    return json.dumps([json.loads(json.dumps(prepare_results(i), default=lambda o: dict(o))) for i in cursor])
 
 
 @router.get("/query", summary="Neo4j query")
