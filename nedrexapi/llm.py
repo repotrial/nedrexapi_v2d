@@ -25,6 +25,7 @@ headers = {"Authorization": "Bearer " + str(_LLM_chat_api_key)}
 def get_embedder():
     return OllamaEmbeddings(base_url=_LLM_BASE, model=_LLM_model, headers=headers)
 
+
 def get_generator():
     return Ollama(base_url=_LLM_chat_base, model=_LLM_chat_model, temperature=0.0, headers=headers)
 

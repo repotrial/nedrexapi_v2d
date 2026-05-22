@@ -22,11 +22,62 @@ env:
   REGISTRY: ghcr.io
   # github.repository as <account>/<repo>
   IMAGE_NAME: ${{ github.repository }}
+  BASE_IMAGE_NAME: ${{ github.repository }}-base
 
 
 jobs:
-  build:
+  build-base:
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
 
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3.0.0
+
+      - name: Log into registry ${{ env.REGISTRY }}
+        uses: docker/login-action@v3.0.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker metadata for base image
+        id: meta-base
+        uses: docker/metadata-action@v5.0.0
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.BASE_IMAGE_NAME }}
+          tags: |
+            # Create the 'latest' tag when the trigger is a weekly schedule
+            type=schedule,pattern=latest
+
+            # Create a tag based on the branch name when you push to a branch
+            # e.g., a push to the 'dev' branch creates the 'dev' tag
+            type=ref,event=branch
+
+            # Create a tag for the git commit SHA for traceability
+            type=sha,prefix=,format=short
+
+      - name: Build and push base Docker image
+        uses: docker/build-push-action@v5.0.0
+        with:
+          context: ./docker/docker_base
+          file: ./docker/docker_base/Dockerfile
+          # Always push the base image when this job runs
+          push: true
+          tags: ${{ steps.meta-base.outputs.tags }}
+          labels: ${{ steps.meta-base.outputs.labels }}
+          platforms: linux/amd64
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+  build-main:
+    if: github.event_name == 'schedule'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -41,34 +92,33 @@ jobs:
         with:
           submodules: 'recursive'
           token: ${{ secrets.GH_TOKEN }}
-      # prevent caching
+
       - name: Force clean submodule update
         run: |
           git submodule sync --recursive
           git submodule foreach --recursive git fetch --all
           git submodule update --remote --recursive --force
-          
-      # prevent caching
-      - name: Force clean submodule update
+
+      - name: Determine Base Image Tag
+        id: base-tag
         run: |
-          git submodule sync --recursive
-          git submodule foreach --recursive git fetch --all
-          git submodule update --remote --recursive --force
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BRANCH="${{ github.base_ref }}"
+          else
+            BRANCH="${{ github.ref_name }}"
+          fi
           
+          echo "tag=$BRANCH" >> $GITHUB_OUTPUT
+
       - name: Setup QEMU
         uses: docker/setup-qemu-action@v2.1.0
 
-      # Set up BuildKit Docker container builder to be able to build
-      # multi-platform images and export cache
-      # https://github.com/docker/setup-buildx-action
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3.0.0
         with:
           install: true
           use: true
 
-      # Login against a Docker registry except on PR
-      # https://github.com/docker/login-action
       - name: Log into registry ${{ env.REGISTRY }}
         if: github.event_name != 'pull_request'
         uses: docker/login-action@v3.0.0
@@ -77,16 +127,12 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # Extract metadata (tags, labels) for Docker
-      # https://github.com/docker/metadata-action
       - name: Extract Docker metadata
         id: meta
         uses: docker/metadata-action@v5.0.0
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
 
-      # Build and push Docker image with Buildx (don't push on PR)
-      # https://github.com/docker/build-push-action
       - name: Build and push Docker image
         id: build-and-push
         uses: docker/build-push-action@v5.0.0
@@ -96,7 +142,7 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           platforms: linux/amd64
-          #,linux/arm64
+          build-args: |
+            BASE_TAG=${{ steps.base-tag.outputs.tag }}
           cache-from: type=gha
           cache-to: type=gha, mode=max
-

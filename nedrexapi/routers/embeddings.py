@@ -39,6 +39,16 @@ class QueryEmbeddingRequest(_BaseModel):
 
 DEFAULT_QUERY_EMBEDDING_REQUEST = QueryEmbeddingRequest()
 
+# def close_neo4j_connection():
+#     if _NEO4J_DRIVER is None:
+#         return
+#     try:
+#         _NEO4J_DRIVER._driver.close()
+#     except Exception as e:
+#         logger.error("Failed to close Neo4j driver for embeddings routes: {}", e)
+#         pass
+
+
 def get_kg_connection() -> Neo4jGraph:
     global open_con
     NEO4J_URI = f'bolt://{_NEO4J_HOST}:7687'
