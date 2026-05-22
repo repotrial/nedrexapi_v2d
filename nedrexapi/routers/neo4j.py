@@ -67,7 +67,7 @@ def neo4j_query(query: str, stream: bool = True):
 from pydantic import BaseModel as _BaseModel
 class QueryRequest(_BaseModel):
     query: str
-    stream: True
+    stream: bool = False
 
 @router.post("/query", summary="Neo4j query")
 def neo4j_query(qr: QueryRequest):
