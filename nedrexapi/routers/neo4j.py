@@ -1,5 +1,5 @@
 import json
-from py2neo.errors import GraphError
+from py2neo.errors import Neo4jError
 
 from fastapi import APIRouter as _APIRouter
 from fastapi.responses import StreamingResponse, Response
@@ -56,7 +56,7 @@ def neo4j_query(query: str, stream: bool = True):
 
         result.keys()
 
-    except GraphError as e:
+    except Neo4jError as e:
         error_payload = json.dumps({"error": "Bad Request", "details": e.message})
 
         return Response(content=error_payload, status_code=400, media_type="application/json")
@@ -91,7 +91,7 @@ def neo4j_query(qr: QueryRequest):
 
         result.keys()
 
-    except GraphError as e:
+    except Neo4jError as e:
         error_payload = json.dumps({"error": "Bad Request", "details": e.message})
 
         return Response(content=error_payload, status_code=400, media_type="application/json")
