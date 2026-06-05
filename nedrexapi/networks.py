@@ -80,7 +80,7 @@ def get_network_edge_list(query, prefix):
 
     with _NEO4J_DRIVER.session(fetch_size=1000) as session, open(outfile, "w") as f:
         buffer = []
-        with session.begin_transaction(timeout=360) as tx:
+        with session.begin_transaction(timeout=600) as tx:
             for result in tx.run(query):
                 a = result["x.primaryDomainId"].replace(prefix, "")
                 b = result["y.primaryDomainId"].replace(prefix, "")
