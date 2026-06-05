@@ -1,9 +1,11 @@
+import hashlib
+from pathlib import Path
 from uuid import uuid4 as _uuid4
 
 from neo4j import GraphDatabase as _GraphDatabase  # type: ignore
-from pottery import Redlock, redis_cache
+from pottery import Redlock
 
-from nedrexapi.common import _REDIS
+from nedrexapi.common import _NETWORK_CACHE_DIR, _REDIS
 from nedrexapi.config import config
 from nedrexapi.logger import logger
 
@@ -47,6 +49,10 @@ NETWORK_GEN_LOCK = Redlock(key="network_generation_lock", masters={_REDIS}, auto
 BUFFER_SIZE = 10000  # You can adjust this value based on your testing
 
 
+def _network_hash(query: str, prefix: str) -> str:
+    return hashlib.sha256(f"{query}|{prefix}".encode()).hexdigest()
+
+
 def get_network(query, prefix, type):
     logger.info(f"obtaining {type} network for query:{_NEWLINE_TAB}{query.strip().replace(_NEWLINE, _NEWLINE_TAB)}")
     with NETWORK_GEN_LOCK:
@@ -64,8 +70,11 @@ def get_network(query, prefix, type):
             raise Exception("invalid type given")
 
 
-@redis_cache(redis=_REDIS, key="edge-list-generation-cache", timeout=int(1e10))
 def get_network_edge_list(query, prefix):
+    cache_path = _NETWORK_CACHE_DIR / f"{_network_hash(query, prefix)}.tsv"
+    if cache_path.exists():
+        return str(cache_path)
+
     outfile = f"/tmp/{_uuid4()}.tsv"
 
     with _NEO4J_DRIVER.session() as session, open(outfile, "w") as f:
@@ -79,18 +88,21 @@ def get_network_edge_list(query, prefix):
                 f.write('\n'.join(buffer) + '\n')
                 buffer.clear()
 
-        # Write remaining lines in the buffer
         if buffer:
             f.write('\n'.join(buffer) + '\n')
 
-    return outfile
+    Path(outfile).rename(cache_path)
+    return str(cache_path)
 
 
-@redis_cache(redis=_REDIS, key="sif-generation-cache", timeout=int(1e10))
 def get_network_sif(query, prefix):
-    outfile = f"/tmp/{_uuid4()}.sif"
+    cache_path = _NETWORK_CACHE_DIR / f"{_network_hash(query, prefix)}.sif"
+    if cache_path.exists():
+        return str(cache_path)
 
     edge_list = get_network_edge_list(query, prefix)
+    outfile = f"/tmp/{_uuid4()}.sif"
+
     with open(edge_list, "r") as f, open(outfile, "w") as g:
         buffer = []
         for line in f:
@@ -104,11 +116,11 @@ def get_network_sif(query, prefix):
                 g.write('\n'.join(buffer) + '\n')
                 buffer.clear()
 
-        # Write remaining lines in the buffer
         if buffer:
             g.write('\n'.join(buffer) + '\n')
 
-    return outfile
+    Path(outfile).rename(cache_path)
+    return str(cache_path)
 
 
 def normalise_seeds_and_determine_type(seeds):
@@ -136,4 +148,3 @@ def normalise_seeds_and_determine_type(seeds):
         new_seeds = [seed.replace("UNIPROT.", "") for seed in new_seeds]
 
     return new_seeds, seed_type
-
