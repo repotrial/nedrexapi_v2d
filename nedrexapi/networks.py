@@ -1,4 +1,5 @@
 import hashlib
+import shutil
 from pathlib import Path
 from uuid import uuid4 as _uuid4
 
@@ -91,7 +92,7 @@ def get_network_edge_list(query, prefix):
         if buffer:
             f.write('\n'.join(buffer) + '\n')
 
-    Path(outfile).rename(cache_path)
+    shutil.move(outfile, cache_path)
     return str(cache_path)
 
 
@@ -119,7 +120,7 @@ def get_network_sif(query, prefix):
         if buffer:
             g.write('\n'.join(buffer) + '\n')
 
-    Path(outfile).rename(cache_path)
+    shutil.move(outfile, cache_path)
     return str(cache_path)
 
 

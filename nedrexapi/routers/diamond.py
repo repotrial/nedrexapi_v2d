@@ -100,7 +100,7 @@ def diamond_submit(
     }
 
     with _DIAMOND_COLL_LOCK:
-        result = _DIAMOND_COLL.find_one(query)
+        result = _DIAMOND_COLL.find_one({**query, "status": {"$ne": "failed"}})
 
         if result:
             uid = result["uid"]
