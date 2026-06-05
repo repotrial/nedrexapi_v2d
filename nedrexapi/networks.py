@@ -78,16 +78,17 @@ def get_network_edge_list(query, prefix):
 
     outfile = f"/tmp/{_uuid4()}.tsv"
 
-    with _NEO4J_DRIVER.session() as session, open(outfile, "w") as f:
+    with _NEO4J_DRIVER.session(fetch_size=1000) as session, open(outfile, "w") as f:
         buffer = []
-        for result in session.run(query):
-            a = result["x.primaryDomainId"].replace(prefix, "")
-            b = result["y.primaryDomainId"].replace(prefix, "")
-            buffer.append(f"{a}\t{b}")
+        with session.begin_transaction(timeout=360) as tx:
+            for result in tx.run(query):
+                a = result["x.primaryDomainId"].replace(prefix, "")
+                b = result["y.primaryDomainId"].replace(prefix, "")
+                buffer.append(f"{a}\t{b}")
 
-            if len(buffer) >= BUFFER_SIZE:
-                f.write('\n'.join(buffer) + '\n')
-                buffer.clear()
+                if len(buffer) >= BUFFER_SIZE:
+                    f.write('\n'.join(buffer) + '\n')
+                    buffer.clear()
 
         if buffer:
             f.write('\n'.join(buffer) + '\n')
