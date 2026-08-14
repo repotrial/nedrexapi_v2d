@@ -75,12 +75,12 @@ if config["api.rate_limiting_enabled"]:
     app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
     app.add_middleware(SlowAPIMiddleware)
 
-    from fastapi.middleware.cors import CORSMiddleware
-    app.add_middleware(
-      CORSMiddleware,
-      allow_origins=["*"],
-      allow_methods=["GET","POST","OPTIONS"],
-      allow_headers=["*"],
+from fastapi.middleware.cors import CORSMiddleware
+app.add_middleware(
+  CORSMiddleware,
+  allow_origins=["*"],
+  allow_methods=["GET","POST","OPTIONS"],
+  allow_headers=["*"],
 )
 
 def _get_prefix(base: str, prefix: str):
