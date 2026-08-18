@@ -10,7 +10,8 @@ from fastapi.responses import FileResponse, StreamingResponse, Response
 from pydantic import BaseModel as _BaseModel
 
 from nedrexapi.common import _NEO4J_QUERY_COLL, _NEO4J_QUERY_COLL_LOCK, _NEO4J_QUERY_DIR_INTERNAL
-from nedrexapi.neo4j_utils import _NEO4J_DRIVER, chunk_records, run_query
+from nedrexapi.neo4j_serialization import chunk_records, run_query
+from nedrexapi.neo4j_utils import _NEO4J_DRIVER
 from nedrexapi.tasks import queue_and_wait_for_job
 
 router = _APIRouter()
