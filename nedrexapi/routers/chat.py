@@ -3,7 +3,6 @@ from fastapi import HTTPException as _HTTPException
 from fastapi import Response as _Response
 from pydantic import BaseModel as _BaseModel
 from pydantic import Field as _Field
-from langchain_neo4j import Neo4jGraph
 import json
 
 from nedrexapi.common import (
@@ -19,15 +18,6 @@ from nedrexapi.routers.embeddings import run_neo4j_query
 
 from nedrexapi.config import config as _config
 from nedrexapi.logger import logger
-
-_NEO4J_PORT = _config[f'db.{_config["api.status"]}.neo4j_bolt_port_internal']
-_NEO4J_HOST = _config[f'db.{_config["api.status"]}.neo4j_name']
-_NEO4J_DRIVER = None
-
-try:
-    _NEO4J_DRIVER = Neo4jGraph(f"bolt://{_NEO4J_HOST}:{_NEO4J_PORT}", username="", password="", database='neo4j')
-except Exception as exc:
-    logger.error("Failed to initialize Neo4j driver for chat routes: {}", exc)
 
 class QuestionRequest(_BaseModel):
     query: str = _Field("", title="Query that is used to search for hits in the knowledge graph and subsequently answer the posed question.", description="This query will be used to find the closest matches in the KG and subsequently answer the question using an LLM", examples=["What is AD5?", "What is a prion disease?"])
@@ -60,7 +50,7 @@ def get_explain_match_query(id, type):
 @router.get("/explain/{collection}", summary="Explains an entry of the KG")
 @check_api_key_decorator
 def explain_entry(id:str, collection:str):
-    from nedrexapi.routers.embeddings import close_neo4j_connection
+    from nedrexapi.routers.embeddings import close_kg_connection
     try:
         messages = [("system","You are a system that helps explaining entries from a knowledge graph. The knowledge graph is containing molecular biological entities and relationships and you can identify the type by the type attribute. You will be handed a neo4j entry. Please create a summary that explains what can be inferred from the entries properties. Do not write any introductory sentences, just start explaining and summarizing the content!")]
         result = run_neo4j_query(get_explain_match_query(id, collection))
@@ -68,14 +58,14 @@ def explain_entry(id:str, collection:str):
         messages.append(("human",human_message))
         return _Response(chat(messages).content)
     finally:
-        close_neo4j_connection()
+        close_kg_connection()
 
 
 @router.post("/ask")
 @check_api_key_decorator
 def ask_kb(request:QuestionRequest=DEFAULT_QUESTION_REQUEST):
     query = request.query
-    from nedrexapi.routers.embeddings import query_all_embeddings, create_embedding, query_single_embedding, close_neo4j_connection
+    from nedrexapi.routers.embeddings import query_all_embeddings, create_embedding, query_single_embedding, close_kg_connection
     top = request.top if request.top else 5
     collection = request.collection
     try:
@@ -91,4 +81,4 @@ def ask_kb(request:QuestionRequest=DEFAULT_QUESTION_REQUEST):
         messages.append(("human",human_message))
         return _Response(chat(messages).content)
     finally:
-        close_neo4j_connection()
+        close_kg_connection()

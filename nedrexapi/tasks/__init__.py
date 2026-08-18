@@ -18,6 +18,7 @@ from nedrexapi.tasks.diamond import run_diamond_wrapper
 from nedrexapi.tasks.domino import run_domino_wrapper
 from nedrexapi.tasks.graph import graph_constructor_wrapper
 from nedrexapi.tasks.kpm import run_kpm_wrapper
+from nedrexapi.tasks.neo4j import neo4j_query_job_wrapper
 from nedrexapi.tasks.must import run_must_wrapper
 from nedrexapi.tasks.robust import run_robust_wrapper
 from nedrexapi.tasks.trustrank import run_trustrank_wrapper
@@ -53,6 +54,8 @@ def queue_and_wait_for_job(type, uid):
         job = QUEUE.enqueue(run_bicon_wrapper, uid, job_timeout=TIMEOUT)
     elif type == "graph":
         job = QUEUE.enqueue(graph_constructor_wrapper, uid, job_timeout=TIMEOUT)
+    elif type == "neo4j_query":
+        job = QUEUE.enqueue(neo4j_query_job_wrapper, uid, job_timeout=TIMEOUT)
     elif type == "closeness":
         job = QUEUE.enqueue(run_closeness_wrapper, uid, job_timeout=TIMEOUT)
     elif type == "trustrank":
