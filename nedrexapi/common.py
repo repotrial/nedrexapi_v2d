@@ -34,6 +34,7 @@ _COMORBIDITOME_COLL_LOCK = _Redlock(key="comorbiditome_collection_lock", masters
 _DIAMOND_COLL_LOCK = _Redlock(key="diamond_collection_lock", masters={_REDIS}, auto_release_time=int(1e10))
 _DOMINO_COLL_LOCK = _Redlock(key="domino_collection_lock", masters={_REDIS}, auto_release_time=int(1e10))
 _GRAPH_COLL_LOCK = _Redlock(key="graph_collection_lock", masters={_REDIS}, auto_release_time=int(1e10))
+_NEO4J_QUERY_COLL_LOCK = _Redlock(key="neo4j_query_collection_lock", masters={_REDIS}, auto_release_time=int(1e10))
 _KPM_COLL_LOCK = _Redlock(key="kpm_collection_lock", masters={_REDIS}, auto_release_time=int(1e10))
 _MUST_COLL_LOCK = _Redlock(key="must_collection_lock", masters={_REDIS}, auto_release_time=int(1e10))
 _NETWORK_GEN_LOCK = _Redlock(key="network_generation_lock", masters={_REDIS}, auto_release_time=int(1e10))
@@ -56,6 +57,7 @@ _COMORBIDITOME_COLL = get_api_collection("comorbiditome_")
 _DIAMOND_COLL = get_api_collection("diamond_")
 _DOMINO_COLL = get_api_collection("domino_")
 _GRAPH_COLL = get_api_collection("graphs_")
+_NEO4J_QUERY_COLL = get_api_collection("neo4j_queries_")
 _KPM_COLL = get_api_collection("kpm_")
 _ROBUST_COLL = get_api_collection("robust_")
 _TRUSTRANK_COLL = get_api_collection("trustrank_")
@@ -73,6 +75,7 @@ _MUST_SUFFIX = "must_"
 _ROBUST_SUFFIX = "robust_"
 _BICON_SUFFIX = "bicon_"
 _GRAPH_SUFFIX = "graphs_"
+_NEO4J_QUERY_SUFFIX = "neo4j_queries_"
 _CLOSENESS_SUFFIX = "closeness_"
 _COMORBIDITOME_SUFFIX = "comorbiditome_"
 _TRUSTRANK_SUFFIX = "trustrank_"
@@ -84,6 +87,8 @@ _ROBUST_DIR = _DATA_DIR / _ROBUST_SUFFIX
 _BICON_DIR_INTERNAL = _DATA_DIR_INTERNAL / _BICON_SUFFIX
 _GRAPH_DIR = _DATA_DIR / _GRAPH_SUFFIX
 _GRAPH_DIR_INTERNAL = _DATA_DIR_INTERNAL / _GRAPH_SUFFIX
+_NEO4J_QUERY_DIR = _DATA_DIR / _NEO4J_QUERY_SUFFIX
+_NEO4J_QUERY_DIR_INTERNAL = _DATA_DIR_INTERNAL / _NEO4J_QUERY_SUFFIX
 _CLOSENESS_DIR = _DATA_DIR / _CLOSENESS_SUFFIX
 _COMORBIDITOME_DIR_INTERNAL = _STATIC_DIR_INTERNAL / _COMORBIDITOME_SUFFIX
 _TRUSTRANK_DIR = _DATA_DIR / _TRUSTRANK_SUFFIX
@@ -97,6 +102,7 @@ for directory in [
     _BICON_DIR_INTERNAL,
     _GRAPH_DIR,
     _GRAPH_DIR_INTERNAL,
+    _NEO4J_QUERY_DIR_INTERNAL,
     _CLOSENESS_DIR,
     _TRUSTRANK_DIR,
     _STATIC_DIR_INTERNAL,
