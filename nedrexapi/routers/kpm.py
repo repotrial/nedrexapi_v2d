@@ -1,20 +1,16 @@
 from uuid import uuid4
 
 from fastapi import APIRouter, BackgroundTasks, HTTPException
-from pottery import Redlock
 from pydantic import BaseModel, Field
 
 from nedrexapi.common import (
     _API_KEY_HEADER_ARG,
-    _REDIS,
+    _KPM_COLL,
+    _KPM_COLL_LOCK,
     check_api_key_decorator,
-    get_api_collection,
 )
 from nedrexapi.networks import normalise_seeds_and_determine_type
 from nedrexapi.tasks import queue_and_wait_for_job
-
-_KPM_COLL = get_api_collection("kpm_")
-_KPM_COLL_LOCK = Redlock(key="kpm_collection_lock", masters={_REDIS}, auto_release_time=int(1e10))
 
 router = APIRouter()
 

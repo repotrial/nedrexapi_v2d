@@ -4,19 +4,18 @@ from uuid import uuid4 as _uuid4
 from fastapi import APIRouter as _APIRouter
 from fastapi import BackgroundTasks as _BackgroundTasks
 from fastapi import HTTPException as _HTTPException
-from pottery import Redlock as _Redlock
 from pydantic import BaseModel as _BaseModel
 from pydantic import Field as _Field
 
-from nedrexapi.common import _API_KEY_HEADER_ARG, _REDIS, check_api_key_decorator
-from nedrexapi.common import get_api_collection as _get_api_collection
+from nedrexapi.common import (
+    _API_KEY_HEADER_ARG,
+    _VALIDATION_COLL,
+    _VALIDATION_COLL_LOCK,
+    check_api_key_decorator,
+)
 from nedrexapi.tasks import queue_and_wait_for_job
 
 router = _APIRouter()
-
-
-_VALIDATION_COLL = _get_api_collection("validation_")
-_VALIDATION_COLL_LOCK = _Redlock(key="validation_collection_lock", masters={_REDIS}, auto_release_time=int(1e10))
 
 
 def standardize_list(lst, prefix):
@@ -110,7 +109,7 @@ def joint_validation_submit(
     # TODO: Add versioning (separate for DB and API)
 
     with _VALIDATION_COLL_LOCK:
-        doc = _VALIDATION_COLL.find_one(record)
+        doc = _VALIDATION_COLL.find_one({**record, "status": {"$ne": "failed"}})
         if doc:
             uid = doc["uid"]
         else:
@@ -167,7 +166,7 @@ def module_validation_submit(
     record["permutations"] = mvr.permutations
     record["only_approved_drugs"] = mvr.only_approved_drugs
     record["validation_type"] = "module"
-    record["module_member_type"] = mvr.module_member_type
+    record["module_member_type"] = mvr.module_member_type.lower()
 
     if record["module_member_type"] == "gene":
         record["module_members"] = sorted(set(standardize_entrez_list(mvr.module_members)))
@@ -177,7 +176,7 @@ def module_validation_submit(
     # TODO: Add versioning (separate for DB and API)
 
     with _VALIDATION_COLL_LOCK:
-        rec = _VALIDATION_COLL.find_one(record)
+        rec = _VALIDATION_COLL.find_one({**record, "status": {"$ne": "failed"}})
         if rec:
             uid = rec["uid"]
         else:
@@ -232,7 +231,7 @@ def drug_validation_submit(
     # TODO: Add versioning (separate for DB and API)
 
     with _VALIDATION_COLL_LOCK:
-        rec = _VALIDATION_COLL.find_one(record)
+        rec = _VALIDATION_COLL.find_one({**record, "status": {"$ne": "failed"}})
         if rec:
             uid = rec["uid"]
         else:

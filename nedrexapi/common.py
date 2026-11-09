@@ -1,6 +1,7 @@
 import os
 import datetime as _datetime
 import subprocess as _subprocess
+import threading as _threading
 from functools import wraps
 from inspect import getfullargspec
 from pathlib import Path
@@ -10,6 +11,7 @@ from fastapi import Header as _Header
 from fastapi import HTTPException as _HTTPException
 from pottery import RedisDict as _RedisDict
 from pottery import Redlock as _Redlock
+from pottery.exceptions import ReleaseUnlockedLock as _ReleaseUnlockedLock
 from pymongo import MongoClient as _MongoClient  # type: ignore
 from pymongo.collection import Collection as _Collection  # type: ignore
 from redis import Redis as _Redis  # type: ignore
@@ -27,22 +29,80 @@ _REDIS = _Redis.from_url(
     f"redis://{_config['api.redis_host']}:{_config['api.redis_port_internal']}/{_config['api.redis_nedrex_db']}")
 _STATUS = _RedisDict(redis=_REDIS, key="static-file-status")
 
+_COLLECTION_LOCK_AUTO_RELEASE_MS = 60 * 1000  # 60 seconds
+_LONG_LOCK_AUTO_RELEASE_MS = 30 * 60 * 1000  # 30 minutes
+
+
+class _RedisLock:
+    """Thread-safe wrapper around pottery.Redlock that instantiates a fresh
+    Redlock per acquisition so concurrent threads never overwrite each other's
+    internal `_uuid` token.
+    """
+
+    def __init__(self, key: str, masters, auto_release_time: int = _COLLECTION_LOCK_AUTO_RELEASE_MS):
+        self.key = key
+        self.masters = masters
+        self.auto_release_time = auto_release_time
+        self._local = _threading.local()
+
+    def _new_lock(self) -> _Redlock:
+        return _Redlock(
+            key=self.key,
+            masters=self.masters,
+            auto_release_time=self.auto_release_time,
+        )
+
+    def acquire(self, *args, **kwargs) -> bool:
+        lock = self._new_lock()
+        acquired = lock.acquire(*args, **kwargs)
+        if acquired:
+            stack = getattr(self._local, "stack", None)
+            if stack is None:
+                stack = []
+                self._local.stack = stack
+            stack.append(lock)
+        return acquired
+
+    def release(self) -> None:
+        stack = getattr(self._local, "stack", None)
+        if stack:
+            lock = stack.pop()
+            try:
+                lock.release()
+            except _ReleaseUnlockedLock:
+                logger.warning(f"Lock {self.key!r} had already expired or been released before release()")
+
+    def __enter__(self):
+        self.acquire()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.release()
+        return False
+
+
 # Locks
-_BICON_COLL_LOCK = _Redlock(key="bicon_collection_lock", masters={_REDIS}, auto_release_time=int(1e10))
-_CLOSENESS_COLL_LOCK = _Redlock(key="closeness_collection_lock", masters={_REDIS}, auto_release_time=int(1e10))
-_COMORBIDITOME_COLL_LOCK = _Redlock(key="comorbiditome_collection_lock", masters={_REDIS}, auto_release_time=int(1e10))
-_DIAMOND_COLL_LOCK = _Redlock(key="diamond_collection_lock", masters={_REDIS}, auto_release_time=int(1e10))
-_DOMINO_COLL_LOCK = _Redlock(key="domino_collection_lock", masters={_REDIS}, auto_release_time=int(1e10))
-_GRAPH_COLL_LOCK = _Redlock(key="graph_collection_lock", masters={_REDIS}, auto_release_time=int(1e10))
-_NEO4J_QUERY_COLL_LOCK = _Redlock(key="neo4j_query_collection_lock", masters={_REDIS}, auto_release_time=int(1e10))
-_KPM_COLL_LOCK = _Redlock(key="kpm_collection_lock", masters={_REDIS}, auto_release_time=int(1e10))
-_MUST_COLL_LOCK = _Redlock(key="must_collection_lock", masters={_REDIS}, auto_release_time=int(1e10))
-_NETWORK_GEN_LOCK = _Redlock(key="network_generation_lock", masters={_REDIS}, auto_release_time=int(1e10))
-_ROBUST_COLL_LOCK = _Redlock(key="robust_collection_lock", masters={_REDIS}, auto_release_time=int(1e10))
-_STATIC_RANKING_LOCK = _Redlock(key="static-ranking-lock", masters={_REDIS}, auto_release_time=int(1e10))
-_STATIC_VALIDATION_LOCK = _Redlock(key="static-validation-lock", masters={_REDIS}, auto_release_time=int(1e10))
-_TRUSTRANK_COLL_LOCK = _Redlock(key="trustrank_collection_lock", masters={_REDIS}, auto_release_time=int(1e10))
-_VALIDATION_COLL_LOCK = _Redlock(key="validation_collection_lock", masters={_REDIS}, auto_release_time=int(1e10))
+_BICON_COLL_LOCK = _RedisLock(key="bicon_collection_lock", masters={_REDIS})
+_CLOSENESS_COLL_LOCK = _RedisLock(key="closeness_collection_lock", masters={_REDIS})
+_COMORBIDITOME_COLL_LOCK = _RedisLock(key="comorbiditome_collection_lock", masters={_REDIS})
+_DIAMOND_COLL_LOCK = _RedisLock(key="diamond_collection_lock", masters={_REDIS})
+_DOMINO_COLL_LOCK = _RedisLock(key="domino_collection_lock", masters={_REDIS})
+_GRAPH_COLL_LOCK = _RedisLock(key="graph_collection_lock", masters={_REDIS})
+_NEO4J_QUERY_COLL_LOCK = _RedisLock(key="neo4j_query_collection_lock", masters={_REDIS})
+_KPM_COLL_LOCK = _RedisLock(key="kpm_collection_lock", masters={_REDIS})
+_MUST_COLL_LOCK = _RedisLock(key="must_collection_lock", masters={_REDIS})
+_NETWORK_GEN_LOCK = _RedisLock(
+    key="network_generation_lock", masters={_REDIS}, auto_release_time=_LONG_LOCK_AUTO_RELEASE_MS
+)
+_ROBUST_COLL_LOCK = _RedisLock(key="robust_collection_lock", masters={_REDIS})
+_STATIC_RANKING_LOCK = _RedisLock(
+    key="static-ranking-lock", masters={_REDIS}, auto_release_time=_LONG_LOCK_AUTO_RELEASE_MS
+)
+_STATIC_VALIDATION_LOCK = _RedisLock(
+    key="static-validation-lock", masters={_REDIS}, auto_release_time=_LONG_LOCK_AUTO_RELEASE_MS
+)
+_TRUSTRANK_COLL_LOCK = _RedisLock(key="trustrank_collection_lock", masters={_REDIS})
+_VALIDATION_COLL_LOCK = _RedisLock(key="validation_collection_lock", masters={_REDIS})
 
 
 # Collections
@@ -121,57 +181,51 @@ limiter = Limiter(
 def generate_ranking_static_files():
     """Generates the GGI and PPI necessary for ranking routes"""
 
-    _STATIC_RANKING_LOCK.acquire()
-    if _STATUS.get("static-ranking") is True:
-        _STATIC_RANKING_LOCK.release()
-        return
+    with _STATIC_RANKING_LOCK:
+        if _STATUS.get("static-ranking") is True:
+            return
 
-    logger.info("generating static files for ranking routes")
-    proc = _subprocess.Popen(
-        ["python", f"{_config['api.directories.scripts']}/generate_ranking_input_networks.py", _STATIC_DIR_INTERNAL],
-        cwd=_config["api.directories.static"],
-        stdout=_subprocess.PIPE,
-        stderr=_subprocess.PIPE,
-    )
-    proc.communicate()
+        logger.info("generating static files for ranking routes")
+        proc = _subprocess.Popen(
+            ["python", f"{_config['api.directories.scripts']}/generate_ranking_input_networks.py", _STATIC_DIR_INTERNAL],
+            cwd=_config["api.directories.static"],
+            stdout=_subprocess.PIPE,
+            stderr=_subprocess.PIPE,
+        )
+        proc.communicate()
 
-    if proc.returncode == 0:
-        logger.info("static files for ranking routes generated successfully")
-        _STATUS["static-ranking"] = True
-    else:
-        logger.critical("static files for ranking routes exited with non-zero exit code")
-        _STATUS["static-ranking"] = False
-
-    _STATIC_RANKING_LOCK.release()
+        if proc.returncode == 0:
+            logger.info("static files for ranking routes generated successfully")
+            _STATUS["static-ranking"] = True
+        else:
+            logger.critical("static files for ranking routes exited with non-zero exit code")
+            _STATUS["static-ranking"] = False
 
 
 def generate_validation_static_files():
     """Generates the GGI and PPI necessary for validation routes"""
 
-    _STATIC_VALIDATION_LOCK.acquire()
-    if _STATUS.get("static-validation") is True:
-        _STATIC_VALIDATION_LOCK.release()
-        return
+    with _STATIC_VALIDATION_LOCK:
+        if _STATUS.get("static-validation") is True:
+            return
 
-    logger.info("generating static files (GGI and PPI) for validation methods")
-    network_generator_script = f"{_config['api.directories.scripts']}/nedrex_validation/network_generator.py"
+        logger.info("generating static files (GGI and PPI) for validation methods")
+        network_generator_script = f"{_config['api.directories.scripts']}/nedrex_validation/network_generator.py"
 
-    proc = _subprocess.Popen(
-        ["python", network_generator_script],
-        cwd=_config["api.directories.static"],
-        stdout=_subprocess.PIPE,
-        stderr=_subprocess.PIPE,
-    )
-    proc.communicate()
+        proc = _subprocess.Popen(
+            ["python", network_generator_script],
+            cwd=_config["api.directories.static"],
+            stdout=_subprocess.PIPE,
+            stderr=_subprocess.PIPE,
+        )
+        proc.communicate()
 
-    if proc.returncode == 0:
-        logger.info("static files for validation routes generated successfully")
-        _STATUS["static-validation"] = True
-    else:
-        logger.critical("static files for validation routes exited with non-zero exit code")
-        _STATUS["static-validation"] = False
-
-    _STATIC_VALIDATION_LOCK.release()
+        if proc.returncode == 0:
+            logger.info("static files for validation routes generated successfully")
+            _STATUS["static-validation"] = True
+        else:
+            logger.critical("static files for validation routes exited with non-zero exit code")
+            _STATUS["static-validation"] = False
 
 
 def invalidate_expired_keys() -> None:

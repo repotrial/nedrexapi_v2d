@@ -4,9 +4,8 @@ from pathlib import Path
 from uuid import uuid4 as _uuid4
 
 from neo4j import GraphDatabase as _GraphDatabase  # type: ignore
-from pottery import Redlock
 
-from nedrexapi.common import _NETWORK_CACHE_DIR, _REDIS
+from nedrexapi.common import _NETWORK_CACHE_DIR, _NETWORK_GEN_LOCK
 from nedrexapi.config import config
 from nedrexapi.logger import logger
 
@@ -45,7 +44,7 @@ QUERY_MAP = {
 }
 
 
-NETWORK_GEN_LOCK = Redlock(key="network_generation_lock", masters={_REDIS}, auto_release_time=int(1e10))
+NETWORK_GEN_LOCK = _NETWORK_GEN_LOCK
 
 BUFFER_SIZE = 10000  # You can adjust this value based on your testing
 

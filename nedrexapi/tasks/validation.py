@@ -72,11 +72,17 @@ def joint_validation(uid):
         ]
 
         p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        p.communicate()
+        _, stderr = p.communicate()
+        if p.returncode != 0:
+            logger.error(f"joint validation job {uid!r} failed")
+            logger.error("\n" + stderr.decode())
+            raise Exception("joint_validation.py had non-zero exit code; API developers are aware of this issue")
 
         outfile.seek(0)
         result = outfile.read()
         result_lines = [line.strip() for line in result.split("\n")]
+        empirical_precision_based_pval = None
+        empirical_pval = None
         for line in result_lines:
             if line.startswith("The computed empirical p-value (precision-based) for"):
                 empirical_precision_based_pval = float(line.split()[-1])
@@ -149,6 +155,8 @@ def module_validation(uid: str):
         outfile.seek(0)
         result = outfile.read()
         result_lines = [line.strip() for line in result.split("\n")]
+        empirical_precision_based_pval = None
+        empirical_pval = None
         for line in result_lines:
             if line.startswith("The computed empirical p-value (precision-based) for"):
                 empirical_precision_based_pval = float(line.split()[-1])
@@ -204,12 +212,18 @@ def drug_validation(uid: str):
         ]
 
         p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        p.communicate()
+        _, stderr = p.communicate()
+        if p.returncode != 0:
+            logger.error(f"drug-based validation job {uid!r} failed")
+            logger.error("\n" + stderr.decode())
+            raise Exception("drugs_validation.py had non-zero exit code; API developers are aware of this issue")
 
         outfile.seek(0)
 
         result = outfile.read()
         result_lines = [line.strip() for line in result.split("\n")]
+        empirical_dcg_based_pval = None
+        rankless_empirical_pval = None
         for line in result_lines:
             if line.startswith("The computed empirical p-value based on DCG"):
                 val = line.split(":")[-1].strip()
