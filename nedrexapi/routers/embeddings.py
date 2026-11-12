@@ -5,7 +5,10 @@ from pydantic import BaseModel as _BaseModel
 from pydantic import Field as _Field
 from langchain_neo4j import Neo4jGraph
 import json
+import threading
 import time
+
+from neo4j.exceptions import ServiceUnavailable, SessionExpired
 
 from nedrexapi.common import (
     _API_KEY_HEADER_ARG,
@@ -22,6 +25,7 @@ from nedrexapi.logger import logger
 _NEO4J_PORT = _config[f'db.{_config["api.status"]}.neo4j_bolt_port_internal']
 _NEO4J_HOST = _config[f'db.{_config["api.status"]}.neo4j_name']
 open_con = None
+_con_lock = threading.RLock()
 # _NEO4J_DRIVER = None
 #
 # try:
@@ -50,39 +54,54 @@ DEFAULT_QUERY_EMBEDDING_REQUEST = QueryEmbeddingRequest()
 
 
 def get_kg_connection() -> Neo4jGraph:
+    """Returns the Neo4j connection shared by all request threads of this worker.
+
+    The underlying driver is thread safe and pools its bolt connections, so it is opened once and
+    kept open; it must not be closed per query/request, as other threads may be using it.
+    """
     global open_con
     NEO4J_URI = f'bolt://{_NEO4J_HOST}:7687'
 
-    retry = 10
-    while retry > 0:
-        try:
-            if open_con is None:
+    with _con_lock:
+        retry = 10
+        while open_con is None:
+            try:
                 logger.debug(f"Opening connection to {NEO4J_URI}")
                 open_con = Neo4jGraph(
                     url=NEO4J_URI, username="", password="", database='neo4j'
                 )
-            if open_con is not None:
-                return open_con
-        except Exception:
-            retry -= 1
-            if retry == 0:
-                logger.error(f"Failed to connect to Neo4j at {NEO4J_URI} after {10} retries!")
-                return None
-        time.sleep(5)
+            except Exception as exc:
+                retry -= 1
+                if retry == 0:
+                    logger.error(f"Failed to connect to Neo4j at {NEO4J_URI} after {10} retries: {exc}")
+                    raise _HTTPException(status_code=503, detail="Knowledge graph database is not reachable.")
+                time.sleep(5)
+        return open_con
 
 
-def close_kg_connection():
+def close_kg_connection(con=None):
+    """Closes and discards the shared connection (only if it still is `con`, when given)."""
     global open_con
-    if open_con is not None:
-        open_con.close()
+    with _con_lock:
+        if open_con is None or (con is not None and open_con is not con):
+            return
+        try:
+            open_con.close()
+        except Exception as exc:
+            logger.warning(f"Failed to close Neo4j connection: {exc}")
         open_con = None
 
 
-def run_neo4j_query(neo4j_query, params={}):
+def run_neo4j_query(neo4j_query, params=None):
+    params = params or {}
     kg = get_kg_connection()
-    res = kg.query(query=neo4j_query, params=params)
-    kg.close()
-    return res
+    try:
+        return kg.query(query=neo4j_query, params=params)
+    except (RuntimeError, ServiceUnavailable, SessionExpired) as exc:
+        # connection was closed or went stale -> reconnect and retry once
+        logger.warning(f"Neo4j connection unusable ({exc}), reconnecting")
+        close_kg_connection(kg)
+        return get_kg_connection().query(query=neo4j_query, params=params)
 
 def to_json(result):
     return json.dumps([json.loads(json.dumps(result, default=lambda o: dict(o)))]) + "\n"
