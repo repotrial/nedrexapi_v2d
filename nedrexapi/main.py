@@ -1,6 +1,7 @@
 import os
 
 from fastapi import FastAPI, APIRouter, Request
+from fastapi.middleware.cors import CORSMiddleware
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
@@ -74,6 +75,19 @@ if config["api.rate_limiting_enabled"]:
     app.state.limiter = limiter
     app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
     app.add_middleware(SlowAPIMiddleware)
+
+# CORS: lets browser pages (e.g. https://nedrex.net) call the API directly. Added last so it is the
+# outermost middleware and also covers rate-limit responses. Access is controlled by the API key
+# header, not by cookies, so credentials are not allowed and "*" is safe as the default.
+# Restrict via `cors_origins = ["https://nedrex.net", ...]` in the [api] config section.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=config.get("api.cors_origins") or ["*"],
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["*"],
+    allow_credentials=False,
+    max_age=86400,
+)
 
 
 def _get_prefix(base: str, prefix: str):
