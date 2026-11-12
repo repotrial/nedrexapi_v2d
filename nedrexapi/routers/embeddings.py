@@ -16,7 +16,7 @@ from nedrexapi.common import (
 )
 
 from nedrexapi.llm import (
-_LLM_BASE, _LLM_model, _LLM_path
+_LLM_BASE, _LLM_model, _LLM_path, _LLM_api_key
 )
 
 from nedrexapi.config import config as _config
@@ -173,14 +173,14 @@ def query_single_embedding(embedding, type, top):
 
 
 def create_embedding(user_query):
-    neo4j_query = """CALL apoc.ml.openai.embedding([$user_query], "no-key",
+    neo4j_query = """CALL apoc.ml.openai.embedding([$user_query], $api_key,
                              {
                                  endpoint: $llm_base,
                                  path: $llm_path,
                                  model: $llm_model
                              })
     yield index, embedding"""
-    params = {"user_query":user_query, "llm_base":_LLM_BASE, "llm_path":_LLM_path, "llm_model":_LLM_model}
+    params = {"user_query":user_query, "llm_base":_LLM_BASE, "llm_path":_LLM_path, "llm_model":_LLM_model, "api_key": _LLM_api_key or "no-key"}
 
     response = run_neo4j_query(neo4j_query, params=params)
     for embedding in response:

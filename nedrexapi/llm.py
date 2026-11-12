@@ -12,6 +12,7 @@ def get_conf_or_none(key):
 _LLM_BASE=get_conf_or_none("embeddings.server_base")
 _LLM_model=get_conf_or_none("embeddings.model")
 _LLM_path=get_conf_or_none("embeddings.path")
+_LLM_api_key=get_conf_or_none("embeddings.api_key")
 
 _LLM_chat_model=get_conf_or_none("chat.model")
 _LLM_chat_base=get_conf_or_none("chat.server_base")
